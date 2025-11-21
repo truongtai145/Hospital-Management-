@@ -1,28 +1,28 @@
 import { useState } from "react";
-import { api } from "../api/axios";
 import { useNavigate } from "react-router-dom";
+import { api } from "../../api/axios";
 
 export default function Login() {
     const navigate = useNavigate();
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError("");
+        setLoading(true);
 
         try {
             const res = await api.post("/login", {
-                username,
+                email,
                 password,
             });
 
-            // Lưu token + role
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("role", res.data.user.role);
 
-            // Điều hướng theo role
             switch (res.data.user.role) {
                 case "admin":
                     navigate("/admin");
@@ -31,15 +31,14 @@ export default function Login() {
                     navigate("/doctor");
                     break;
                 case "patient":
-                    navigate("/patient");
-                    break;
                 default:
-                    navigate("/");
+                    navigate("/patient");
             }
-
-        // eslint-disable-next-line no-unused-vars
         } catch (err) {
-            setError("Sai tài khoản hoặc mật khẩu!");
+            const message = err.response?.data?.message ?? "Sai email hoặc mật khẩu";
+            setError(message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -50,11 +49,13 @@ export default function Login() {
 
                 {error && <p className="error">{error}</p>}
 
-                <label>Tên đăng nhập</label>
+                <label>Email</label>
                 <input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Nhập tên đăng nhập"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Nhập email"
+                    required
                 />
 
                 <label>Mật khẩu</label>
@@ -63,11 +64,16 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Nhập mật khẩu"
+                    required
                 />
 
-                <button type="submit">Đăng nhập</button>
+                <button type="submit" disabled={loading}>
+                    {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+                </button>
 
-                <p>Chưa có tài khoản? <a href="/register">Đăng ký ngay</a></p>
+                <p>
+                    Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
+                </p>
             </form>
         </div>
     );

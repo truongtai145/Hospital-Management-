@@ -11,24 +11,40 @@ class User extends Authenticatable
     use HasApiTokens, Notifiable;
 
     protected $fillable = [
-        'name',
         'email',
         'password',
-        'phone_number',
-        'gender',
-        'address',
-        'profile_url',
         'role',
-        'refresh_token',
+        'is_active',
+        'last_login',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
-        'refresh_token',
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        'is_active' => 'boolean',
+        'last_login' => 'datetime',
     ];
+
+    public function patient()
+    {
+        return $this->hasOne(Patient::class);
+    }
+
+    public function doctor()
+    {
+        return $this->hasOne(Doctor::class);
+    }
+
+    public function adminProfile()
+    {
+        return $this->hasOne(Admin::class);
+    }
+
+    public function refreshTokens()
+    {
+        return $this->hasMany(RefreshToken::class);
+    }
 }
