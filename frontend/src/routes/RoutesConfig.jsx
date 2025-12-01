@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { PATHS } from "./paths";
+import { PATHS } from "./path";
 
 // --- Import Layouts ---
 // Giả sử bạn có Layout chính (Header + Footer)
