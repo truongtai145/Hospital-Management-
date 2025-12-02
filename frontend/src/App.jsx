@@ -1,7 +1,7 @@
 // src/routes/App.jsx
 import { BrowserRouter as Router } from "react-router-dom";
-import ScrollToTop from "./ScrollToTop"; // Đảm bảo file này nằm cùng thư mục routes
-import AppRoutes from "./AppRoutes";     // Đảm bảo file này nằm cùng thư mục routes
+import ScrollToTop from "./routes/ScrollToTop"; 
+import AppRoutes from "./routes/AppRoutes";    
 import { ToastContainer } from 'react-toastify';
 
 // QUAN TRỌNG: Phải import dòng CSS này thì thông báo mới đẹp được

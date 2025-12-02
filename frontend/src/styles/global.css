@@ -1,0 +1,113 @@
+/* Reset cơ bản */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Work Sans', sans-serif;
+    color: #1f2b6c; /* Màu xanh chủ đạo */
+    background-color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+  }
+  
+  /* Container chính của React */
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Font cho các thẻ tiêu đề */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Yeseva One', serif;
+  }
+  
+  /* Link mặc định */
+  a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+  }
+  
+  /* Scroll mượt */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* --- Custom Scrollbar (Thanh cuộn đẹp) --- */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #bfd2f8; /* Màu accent */
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #159eec; /* Màu secondary */
+  }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Work Sans', sans-serif;
+    color: #1f2b6c; /* Màu chữ xanh đậm chủ đạo */
+    background-color: #ffffff; /* Nền trắng */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Root container - KHÔNG giới hạn width */
+  #root {
+    width: 100%;
+    min-height: 100vh;
+  }
+  
+  /* Font cho tiêu đề */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Yeseva One', serif;
+  }
+  
+  /* Xóa bỏ gạch chân mặc định của thẻ a */
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Custom scrollbar (optional) */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
