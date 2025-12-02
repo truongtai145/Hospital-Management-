@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Banner from "../../components/Banner/Banner";
 import BlogPost from "../../components/Blog/BlogPost";
-import BlogSidebar from "../../components/Blog/BlogSidebar";
+import BlogSidebar from "../../components/Blog/BlogSideBar";
 import ContactInfo from "../../components/Contact/ContactInfo";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 

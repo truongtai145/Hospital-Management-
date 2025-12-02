@@ -1,7 +1,7 @@
 import React from 'react';
 import Banner from '../../components/Banner/Banner';
 import NewsSection from '../../components/About/NewsSection';
-import Contactinfo from '../../components/Contact/ContactInfo';
+
 
 import { Phone, MapPin, Mail, Clock, Send } from 'lucide-react';
 
@@ -20,10 +20,10 @@ const ContactPage = () => {
       <Banner breadcrumb="Trang chủ / Liên hệ" title="Liên hệ với chúng tôi" />
 
       
-      <section className="w-full">
+      <section className="w-full my-5">
         <iframe 
           title="Google Map"
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.424168645758!2d106.6970891!3d10.7787834!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f385570472f%3A0x1787491df6ed1d64!2zTmhhdCBoYW4gVm8gLCBRdWF1biAxLCBIaC4gSGljaW1pbmggQ2l0eQ!5e0!3m2!1sen!2s!4v1626078345719!5m2!1sen!2s" 
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3918.4206639906983!2d106.60833247480614!3d10.855574789298153!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752a20d8555555%3A0x545197b91d904792!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBHaWFvIHRow7RuZyBW4bqtbiB04bqjaSBUaMOgbmggcGjhu5EgSOG7kyBDaMOtIE1pbmggLSBDxqEgc-G7nyAz!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s" 
           width="100%" 
           height="450" 
           style={{ border: 0 }} 
@@ -123,7 +123,7 @@ const ContactPage = () => {
         </div>
       </section>
        <NewsSection />
-        <Contactinfo />
+    
     </div>
   );
 };

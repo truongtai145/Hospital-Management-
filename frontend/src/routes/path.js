@@ -1,25 +1,20 @@
-import Doctors from "../components/Doctors/Doctors";
-import AboutPage from "../pages/About/AboutPage";
-
 export const PATHS = {
+  // --- PUBLIC ---
   HOME: "/",
   LOGIN: "/login",
   REGISTER: "/register",
-  Services: "/services",
-  AboutPage : "/about",
-  Doctors: "/doctors",
-  Blog : "/news",
-  Contact : "/contact",
-  // Dashboard Roles
-  ADMIN: "/admin",
-  DOCTOR: "/doctor",
-  PATIENT: "/patient",
-  
-  // Các trang công khai khác
+  ABOUT: "/about",
   SERVICES: "/services",
-  DOCTORS: "/our-doctors",
+  DOCTORS: "/doctors",
+  NEWS: "/news",
+  NEWS_DETAIL: "/news/:id", // Thêm cái này cho trang chi tiết tin tức
   CONTACT: "/contact",
   
-  // Ví dụ trang 404
+  // --- DASHBOARD ROLES ---
+  ADMIN: "/admin",
+  DOCTOR_DASHBOARD: "/doctor-dashboard",   // Đổi tên khác đi để tránh nhầm với trang danh sách bác sĩ
+  PATIENT_DASHBOARD: "/patient-dashboard",
+  
+  // --- SYSTEM ---
   NOT_FOUND: "*",
 };
