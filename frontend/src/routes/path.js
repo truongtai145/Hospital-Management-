@@ -8,6 +8,7 @@ export const PATHS = {
   Services: "/services",
   AboutPage : "/about",
   Doctors: "/doctors",
+  Blog : "/news",
   // Dashboard Roles
   ADMIN: "/admin",
   DOCTOR: "/doctor",

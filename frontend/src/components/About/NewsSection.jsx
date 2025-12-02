@@ -32,7 +32,7 @@ const NewsSection = () => {
             {/* Cột trái */}
             <div className="space-y-6">
                 <NewsCard image="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" />
-                <NewsCard image="https://images.unsplash.com/photo-1584982751601-97dcc096654c?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" />
+                <NewsCard image="https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" />
             </div>
             {/* Cột phải */}
             <div className="space-y-6">

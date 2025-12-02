@@ -1,10 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom"; // 1. Import Link
+import { Link } from "react-router-dom"; 
 import Button from "../Button/Button";
 import { Phone, Clock, MapPin, Search } from "lucide-react";
 
 const Header = () => {
-  // Hàm tạo Link nhanh gọn, tái sử dụng style
+  
   const NavLink = ({ to, label }) => (
     <li>
       <Link
@@ -65,10 +65,10 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Navigation - Đã gắn Link */}
+     
       <nav className="bg-primary text-white sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto max-w-7xl px-10 py-4 flex justify-between items-center">
-          {/* Menu Links */}
+          
           <ul className="flex gap-12 font-medium text-lg">
             <NavLink to="/" label="Trang chủ" />
             <NavLink to="/about" label="Giới thiệu" />

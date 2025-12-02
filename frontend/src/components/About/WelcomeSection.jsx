@@ -13,7 +13,7 @@ const WelcomeSection = () => {
         {/* Cột Ảnh */}
         <div className="lg:w-1/2">
           <img 
-            src="https://images.unsplash.com/photo-1571772996211-2f05772748b8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
+            src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
             alt="Doctors Team" 
             className="rounded-lg shadow-xl w-full object-cover h-[500px]"
           />

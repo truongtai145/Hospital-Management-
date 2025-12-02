@@ -5,7 +5,7 @@ const ContactInfo = () => {
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-4 text-center mb-12">
-        <p className="text-secondary font-bold uppercase tracking-widest text-sm">Giữ liên lạc</p>
+     
         <h2 className="text-4xl text-primary">Liên hệ</h2>
       </div>
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-4">

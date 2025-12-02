@@ -29,17 +29,9 @@ const AboutPage = () => {
           <h1 className="text-5xl font-serif font-bold">Về chúng tôi</h1>
         </div>
       </div>
-
-      {/* 2. Welcome Section (Ảnh 2 bác sĩ & List) */}
       <WelcomeSection />
-
-      {/* 3. Testimonial (Quote nền xanh) */}
-      <TestimonialSection />
-
-      {/* 4. News Section (Tin tức) */}
+     <TestimonialSection />
       <NewsSection />
-
-      {/* 5. Contact Info (4 ô xanh dưới cùng) */}
       <Contactinfo />
     </div>
   );
