@@ -1,7 +1,10 @@
 /* 1. Import Font phải để lên đầu tiên */
 @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&family=Yeseva+One&display=swap');
 
-/* 2. Gọi Tailwind đã đặt trong file styles/vendor.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* 3. Cấu hình cơ bản cho App Y tế */
 * {

@@ -4,14 +4,15 @@ import { PATHS } from "./path";
 // --- Import Layouts ---
 // Giả sử bạn có Layout chính (Header + Footer)
 // Nếu chưa có file này, nó sẽ lấy Layout mình đã viết ở câu hỏi đầu tiên
-import MainLayout from "../components/Layout/Layout"; 
+import MainLayout from "../components/Layout/Layout";
 
 // --- Public Pages (Lazy load) ---
 const Login = lazy(() => import("../pages/auth/Login"));
 const Register = lazy(() => import("../pages/auth/Register"));
 // const Home = lazy(() => import("../components/Hero/Hero")); // Tạm dùng Hero làm Home
 const Home = lazy(() => import("../pages/Home")); // Bạn nên tạo file Home.jsx gom các component lại
-
+const Services = lazy(() => import("../pages/Services/ServicePage"));
+const AboutPage = lazy(() => import("../pages/About/AboutPage"));
 // --- Private Pages (Lazy load) ---
 // const AdminDashboard = lazy(() => import("../pages/Admin/Dashboard"));
 // const DoctorDashboard = lazy(() => import("../pages/Doctor/Dashboard"));
@@ -21,7 +22,7 @@ const Home = lazy(() => import("../pages/Home")); // Bạn nên tạo file Home.
  * Cấu trúc Config:
  * - path: Đường dẫn
  * - element: Component sẽ render
- * - layout: 
+ * - layout:
  *    + 'public': Có Header/Footer (dùng MainLayout)
  *    + 'none': Không có gì (trang Login/Register/Admin)
  */
@@ -43,11 +44,11 @@ export const ROUTES_CONFIG = [
   {
     path: PATHS.HOME,
     element: Home,
-    layout: "public", 
+    layout: "public",
   },
   {
     path: PATHS.SERVICES,
-    element: lazy(() => import("../components/Services/Services")), // Ví dụ load component Services
+    element: lazy(() => import("../pages/Services/ServicePage")), // Ví dụ load component Services
     layout: "public",
   },
   {
@@ -55,28 +56,47 @@ export const ROUTES_CONFIG = [
     element: lazy(() => import("../components/Doctors/Doctors")),
     layout: "public",
   },
-
+  {
+    path: PATHS.SERVICES,
+    element: Services,
+    layout: "public",
+  },
+  {
+    path: PATHS.AboutPage,
+    element: AboutPage,
+    layout: "public",
+  },
   // --- DASHBOARD ROUTES (Tạm để none layout hoặc layout riêng sau này) ---
   {
     path: PATHS.ADMIN,
-    element: () => <div className="p-10 text-primary font-bold">Admin Dashboard</div>, // Placeholder
+    element: () => (
+      <div className="p-10 text-primary font-bold">Admin Dashboard</div>
+    ), // Placeholder
     layout: "none",
   },
   {
     path: PATHS.DOCTOR,
-    element: () => <div className="p-10 text-secondary font-bold">Doctor Dashboard</div>,
+    element: () => (
+      <div className="p-10 text-secondary font-bold">Doctor Dashboard</div>
+    ),
     layout: "none",
   },
   {
     path: PATHS.PATIENT,
-    element: () => <div className="p-10 text-green-600 font-bold">Patient Dashboard</div>,
+    element: () => (
+      <div className="p-10 text-green-600 font-bold">Patient Dashboard</div>
+    ),
     layout: "public", // Bệnh nhân vẫn nên thấy Header/Footer
   },
 
   // --- 404 ---
   {
     path: PATHS.NOT_FOUND,
-    element: () => <div className="text-center mt-20 font-bold text-xl">404 - Trang không tồn tại</div>,
+    element: () => (
+      <div className="text-center mt-20 font-bold text-xl">
+        404 - Trang không tồn tại
+      </div>
+    ),
     layout: "public",
   },
 ];

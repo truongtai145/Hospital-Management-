@@ -1,59 +1,95 @@
-import { Phone, Clock, MapPin, Search } from "lucide-react";
+import React from "react";
+import { Link } from "react-router-dom"; // 1. Import Link
 import Button from "../Button/Button";
+import { Phone, Clock, MapPin, Search } from "lucide-react";
 
 const Header = () => {
+  // Hàm tạo Link nhanh gọn, tái sử dụng style
+  const NavLink = ({ to, label }) => (
+    <li>
+      <Link
+        to={to}
+        className="block py-2 hover:text-secondary hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+      >
+        {label}
+      </Link>
+    </li>
+  );
+
   return (
-    <header className="w-full">
-      {/* TOP BAR */}
-      <div className="hidden md:flex justify-between items-center py-4 container mx-auto px-4">
-        <div className="text-3xl font-bold text-blue-900 uppercase tracking-wider">
-          Med<span className="text-blue-500">dical</span>
-        </div>
+    <header className="w-full bg-white">
+      {/* Top Bar */}
+      <div className="hidden md:flex justify-between items-center py-5 container mx-auto max-w-7xl px-10">
+        <Link
+          to="/"
+          className="text-3xl font-bold text-primary uppercase tracking-wider hover:opacity-70 transition"
+        >
+          Med<span className="text-secondary">dical</span>
+        </Link>
 
-        <div className="flex gap-10 text-sm text-blue-900">
-          <div className="flex items-center gap-2">
-            <Phone className="w-5 h-5 text-blue-500" />
+        {/* Thông tin liên hệ */}
+        <div className="flex gap-10 text-primary">
+          <div className="flex items-center gap-3">
+            <Phone className="w-6 h-6 text-secondary" />
             <div>
-              <p className="font-bold uppercase">Khẩn cấp</p>
-              <p className="text-blue-500">(237) 681-812-255</p>
+              <p className="font-bold uppercase text-xs tracking-wide">
+                Khẩn cấp
+              </p>
+              <p className="text-secondary font-medium text-lg leading-tight">
+                (237) 681-812-255
+              </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-500" />
+          <div className="flex items-center gap-3">
+            <Clock className="w-6 h-6 text-secondary" />
             <div>
-              <p className="font-bold uppercase">Giờ làm việc</p>
-              <p className="text-blue-500">09:00 - 20:00 Mỗi ngày</p>
+              <p className="font-bold uppercase text-xs tracking-wide">
+                Giờ làm việc
+              </p>
+              <p className="text-secondary font-medium text-lg leading-tight">
+                09:00 - 20:00
+              </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-blue-500" />
+          <div className="flex items-center gap-3">
+            <MapPin className="w-6 h-6 text-secondary" />
             <div>
-              <p className="font-bold uppercase">Địa điểm</p>
-              <p className="text-blue-500">Quận 1, TP.HCM</p>
+              <p className="font-bold uppercase text-xs tracking-wide">
+                Địa điểm
+              </p>
+              <p className="text-secondary font-medium text-lg leading-tight">
+                0123 Quận 1, TP.HCM
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* NAV BAR */}
-      <nav className="bg-blue-900 text-white shadow-md">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <ul className="flex gap-8 font-medium">
-            <li className="hover:text-blue-400 cursor-pointer transition">Trang chủ</li>
-            <li className="hover:text-blue-400 cursor-pointer transition">Giới thiệu</li>
-            <li className="hover:text-blue-400 cursor-pointer transition">Dịch vụ</li>
-            <li className="hover:text-blue-400 cursor-pointer transition">Bác sĩ</li>
-            <li className="hover:text-blue-400 cursor-pointer transition">Tin tức</li>
-            <li className="hover:text-blue-400 cursor-pointer transition">Liên hệ</li>
+      {/* Navigation - Đã gắn Link */}
+      <nav className="bg-primary text-white sticky top-0 z-50 shadow-lg">
+        <div className="container mx-auto max-w-7xl px-10 py-4 flex justify-between items-center">
+          {/* Menu Links */}
+          <ul className="flex gap-12 font-medium text-lg">
+            <NavLink to="/" label="Trang chủ" />
+            <NavLink to="/about" label="Giới thiệu" />
+            <NavLink to="/services" label="Dịch vụ" />
+            <NavLink to="/doctors" label="Bác sĩ" />
+            <NavLink to="/news" label="Tin tức" />
+            <NavLink to="/contact" label="Liên hệ" />
           </ul>
 
-          <div className="flex items-center gap-5">
-            <Search className="w-5 h-5 cursor-pointer hover:text-blue-400" />
-            <Button variant="light" className="px-6 py-2 text-sm">
-              Đặt lịch hẹn
-            </Button>
+          <div className="flex items-center gap-6">
+            <Search className="w-6 h-6 cursor-pointer hover:text-secondary transition duration-300" />
+
+            {/* Nút đặt lịch cũng nên gắn link */}
+            <Link to="/appointment">
+              <Button
+                variant="light"
+                className="px-8 py-3 text-base font-bold shadow-md hover:shadow-xl transition-all"
+              >
+                Đặt lịch hẹn
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>

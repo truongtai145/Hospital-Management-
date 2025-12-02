@@ -1,8 +1,11 @@
+import AboutPage from "../pages/About/AboutPage";
+
 export const PATHS = {
   HOME: "/",
   LOGIN: "/login",
   REGISTER: "/register",
-  
+  Services: "/services",
+  AboutPage : "/about",
   // Dashboard Roles
   ADMIN: "/admin",
   DOCTOR: "/doctor",
