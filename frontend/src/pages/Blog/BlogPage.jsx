@@ -3,13 +3,14 @@ import Banner from "../../components/Banner/Banner";
 import BlogPost from "../../components/Blog/BlogPost";
 import BlogSidebar from "../../components/Blog/BlogSidebar";
 import ContactInfo from "../../components/Contact/ContactInfo";
-import { ChevronLeft, ChevronRight } from "lucide-react"; // Icon cho nút chuyển trang
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
+// --- HÀM TẠO MOCK DATA ---
 const generateMockPosts = () => {
   const basePosts = [
     {
       title: "Đam mê đặt bệnh nhân lên hàng đầu",
-      desc: "Tại Meddical, chúng tôi tin rằng sự thấu hiểu và sẻ chia là liều thuốc tinh thần tốt nhất. Đội ngũ y bác sĩ luôn sẵn sàng lắng nghe để đưa ra phác đồ điều trị phù hợp nhất cho từng bệnh nhân.",
+      desc: "Tại Meddical, chúng tôi tin rằng sự thấu hiểu và sẻ chia là liều thuốc tinh thần tốt nhất. Đội ngũ y bác sĩ luôn sẵn sàng lắng nghe để đưa ra phác đồ điều trị phù hợp nhất.",
       img: "https://images.unsplash.com/photo-1551076805-e1869033e561?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
     },
     {
@@ -39,10 +40,11 @@ const generateMockPosts = () => {
     const randomPost = basePosts[index % basePosts.length];
     return {
       id: index + 1,
-      title: `${randomPost.title} `,
+      // Thêm số thứ tự bài viết vào tiêu đề để dễ phân biệt khi test
+      title: `${randomPost.title} (Bài ${index + 1})`,
       desc: randomPost.desc,
       img: randomPost.img,
-      date: `Thứ 2, 0${(index % 9) + 1} Tháng 11, 2025`,
+      date: `Thứ 2, ${(index % 30) + 1} Tháng 09, 2023`,
       author: index % 2 === 0 ? "Bởi Admin" : "Bởi Bác sĩ CKII",
       views: 100 + index * 5,
       likes: 50 + index * 2,
@@ -54,23 +56,27 @@ const NewsPage = () => {
   const [posts, setPosts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 5;
-  -useEffect(() => {
+
+  // 1. Load dữ liệu lần đầu
+  // SỬA LỖI: Xóa dấu '-' thừa trước chữ useEffect
+  useEffect(() => {
     const data = generateMockPosts();
     setPosts(data);
   }, []);
 
-  //Cuộn lên đầu khi chuyển trang
+  // 2. Cuộn lên đầu khi chuyển trang
   useEffect(() => {
-    window.scrollTo({ top: 400, behavior: "smooth" });
+    // Scroll về 0 để lên đầu trang (banner) thay vì lưng chừng 400
+    window.scrollTo({ top: 0, behavior: "smooth" }); 
   }, [currentPage]);
 
-  //  logic phan trang
+  // Logic phân trang
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
   const currentPosts = posts.slice(indexOfFirstPost, indexOfLastPost);
   const totalPages = Math.ceil(posts.length / postsPerPage);
 
-  // chuyen trang
+  // Hàm chuyển trang
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
@@ -80,15 +86,19 @@ const NewsPage = () => {
       <section className="py-20">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex flex-col lg:flex-row gap-12">
+            
             {/* CỘT TRÁI (DANH SÁCH BÀI VIẾT) - Chiếm 2/3 */}
             <div className="lg:w-2/3">
               {currentPosts.map((post) => (
-                <BlogPost key={post.id} {...post} />
+                <BlogPost 
+                    key={post.id} 
+                    {...post} 
+                />
               ))}
 
               {/* --- PHÂN TRANG (PAGINATION) --- */}
               {totalPages > 1 && (
-                <div className="flex items-center gap-2 mt-12 select-none">
+                <div className="flex items-center gap-2 mt-12 select-none justify-center md:justify-start">
                   {/* Nút Prev */}
                   <button
                     onClick={() => paginate(currentPage - 1)}
@@ -102,7 +112,7 @@ const NewsPage = () => {
                     <ChevronLeft size={20} />
                   </button>
 
-                  {/* số trang */}
+                  {/* Danh sách số trang */}
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                     (number) => (
                       <button
@@ -110,7 +120,7 @@ const NewsPage = () => {
                         onClick={() => paginate(number)}
                         className={`w-10 h-10 rounded-full font-medium transition-all ${
                           currentPage === number
-                            ? "bg-primary text-white shadow-lg transform scale-105" // Active
+                            ? "bg-primary text-white shadow-lg transform scale-110" // Active
                             : "bg-gray-100 text-gray-600 hover:bg-secondary hover:text-white" // Inactive
                         }`}
                       >
@@ -119,7 +129,7 @@ const NewsPage = () => {
                     )
                   )}
 
-                  {/* nút next */}
+                  {/* Nút Next */}
                   <button
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}
@@ -135,12 +145,14 @@ const NewsPage = () => {
               )}
             </div>
 
+            {/* CỘT PHẢI (SIDEBAR) - Chiếm 1/3 */}
             <div className="lg:w-1/3">
               <BlogSidebar />
             </div>
           </div>
         </div>
       </section>
+      
       <ContactInfo />
     </div>
   );

@@ -9,6 +9,7 @@ export const PATHS = {
   AboutPage : "/about",
   Doctors: "/doctors",
   Blog : "/news",
+  Contact : "/contact",
   // Dashboard Roles
   ADMIN: "/admin",
   DOCTOR: "/doctor",

@@ -15,6 +15,7 @@ const Services = lazy(() => import("../pages/Services/ServicePage"));
 const AboutPage = lazy(() => import("../pages/About/AboutPage"));
 const Doctors = lazy(() => import("../pages/Doctor/DoctorPage"));
 const Blog = lazy(() => import("../pages/Blog/BlogPage"));
+const Contact = lazy(() => import("../pages/Contact/ContactPage"));
 // --- Private Pages (Lazy load) ---
 // const AdminDashboard = lazy(() => import("../pages/Admin/Dashboard"));
 // const DoctorDashboard = lazy(() => import("../pages/Doctor/Dashboard"));
@@ -30,7 +31,6 @@ const Blog = lazy(() => import("../pages/Blog/BlogPage"));
  */
 
 export const ROUTES_CONFIG = [
-  // --- AUTH ROUTES (Không layout) ---
   {
     path: PATHS.LOGIN,
     element: Login,
@@ -69,7 +69,6 @@ export const ROUTES_CONFIG = [
     layout: "public",
   },
   {
-
     path: PATHS.Doctors,
     element: Doctors,
     layout: "public",
@@ -79,6 +78,12 @@ export const ROUTES_CONFIG = [
     element: Blog,
     layout: "public",
   },
+  {
+    path: PATHS.CONTACT,
+    element: Contact,
+    layout: "public",
+  },
+  <Route path="/news/:id" element={<SingleNewsPage />} />,
   // --- DASHBOARD ROUTES (Tạm để none layout hoặc layout riêng sau này) ---
   {
     path: PATHS.ADMIN,
