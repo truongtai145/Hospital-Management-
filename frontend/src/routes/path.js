@@ -12,7 +12,7 @@ export const PATHS = {
   
   // --- DASHBOARD ROLES ---
   ADMIN: "/admin",
-  DOCTOR_DASHBOARD: "/doctor-dashboard",   // Đổi tên khác đi để tránh nhầm với trang danh sách bác sĩ
+  DOCTOR_DASHBOARD: "/doctor-dashboard",  
   PATIENT_DASHBOARD: "/patient-dashboard",
   
   // --- SYSTEM ---

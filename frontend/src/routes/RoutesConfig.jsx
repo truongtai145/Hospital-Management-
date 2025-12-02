@@ -6,7 +6,7 @@ const Home = lazy(() => import("../pages/Home"));
 const Login = lazy(() => import("../pages/auth/Login"));
 const Register = lazy(() => import("../pages/auth/Register"));
 const ServicePage = lazy(() => import("../pages/Services/ServicePage"));
-const DoctorPage = lazy(() => import("../pages/Doctor/DoctorPage")); 
+const Doctor = lazy(() => import("../pages/Doctor/DoctorPage")); 
 const AboutPage = lazy(() => import("../pages/About/AboutPage"));
 const ContactPage = lazy(() => import("../pages/Contact/ContactPage"));
 const NewsPage = lazy(() => import("../pages/Blog/BlogPage"));
@@ -14,7 +14,7 @@ const SingleNewsPage = lazy(() => import("../pages/Blog/SingleNewsPage"));
 
 
 const AdminDashboard = lazy(() => import("../pages/Admin/AdminDashboard/AdminDashboard"));
-
+const DoctorPage = lazy(() => import("../pages/Doctors/DoctorDashboard/DoctorDashboard"));
 export const ROUTES_CONFIG = [
   // --- AUTH ---
   {
@@ -46,7 +46,7 @@ export const ROUTES_CONFIG = [
   },
   {
     path: PATHS.DOCTORS,
-    element: DoctorPage,
+    element: Doctor,
     layout: "public",
   },
   {
@@ -55,7 +55,7 @@ export const ROUTES_CONFIG = [
     layout: "public",
   },
   {
-    path: PATHS.NEWS_DETAIL, // /news/:id
+    path: PATHS.NEWS_DETAIL,
     element: SingleNewsPage,
     layout: "public",
   },
@@ -77,5 +77,10 @@ export const ROUTES_CONFIG = [
     path: PATHS.NOT_FOUND,
     element: () => <div className="text-center mt-20 font-bold text-xl">404 - Trang không tồn tại</div>,
     layout: "public",
+  },
+  {
+    path:PATHS.DOCTOR_DASHBOARD,
+    element: DoctorPage,
+    layout: "none",
   },
 ];

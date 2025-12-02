@@ -4,7 +4,7 @@ import Contactinfo from "../../components/Contact/ContactInfo";
 import TestimonialSection from "../../components/About/TestimonialSection";
 import NewsSection from "../../components/About/NewsSection";
 import Doctors from "../../components/Doctors/Doctors";
-const DoctorPage = () => {
+const Doctor = () => {
   return (
     <div className="bg-white min-h-screen">
       <div className="relative w-full h-[300px] flex items-center bg-gray-100 overflow-hidden">
@@ -34,4 +34,4 @@ const DoctorPage = () => {
 };
 
  
-export default DoctorPage;
+export default Doctor;
