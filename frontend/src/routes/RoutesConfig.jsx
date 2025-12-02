@@ -13,6 +13,7 @@ const Register = lazy(() => import("../pages/auth/Register"));
 const Home = lazy(() => import("../pages/Home")); // Bạn nên tạo file Home.jsx gom các component lại
 const Services = lazy(() => import("../pages/Services/ServicePage"));
 const AboutPage = lazy(() => import("../pages/About/AboutPage"));
+const Doctors = lazy(() => import("../pages/Doctor/DoctorPage"));
 // --- Private Pages (Lazy load) ---
 // const AdminDashboard = lazy(() => import("../pages/Admin/Dashboard"));
 // const DoctorDashboard = lazy(() => import("../pages/Doctor/Dashboard"));
@@ -64,6 +65,12 @@ export const ROUTES_CONFIG = [
   {
     path: PATHS.AboutPage,
     element: AboutPage,
+    layout: "public",
+  },
+  {
+
+    path: PATHS.Doctors,
+    element: Doctors,
     layout: "public",
   },
   // --- DASHBOARD ROUTES (Tạm để none layout hoặc layout riêng sau này) ---

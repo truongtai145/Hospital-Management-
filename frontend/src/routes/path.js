@@ -1,3 +1,4 @@
+import Doctors from "../components/Doctors/Doctors";
 import AboutPage from "../pages/About/AboutPage";
 
 export const PATHS = {
@@ -6,6 +7,7 @@ export const PATHS = {
   REGISTER: "/register",
   Services: "/services",
   AboutPage : "/about",
+  Doctors: "/doctors",
   // Dashboard Roles
   ADMIN: "/admin",
   DOCTOR: "/doctor",

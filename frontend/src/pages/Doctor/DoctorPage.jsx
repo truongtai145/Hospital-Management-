@@ -1,16 +1,12 @@
 import React from "react";
-
 import Banner from "../../components/Banner/Banner";
 import Contactinfo from "../../components/Contact/ContactInfo";
-
-import WelcomeSection from "../../components/About/WelcomeSection";
 import TestimonialSection from "../../components/About/TestimonialSection";
 import NewsSection from "../../components/About/NewsSection";
-
-const AboutPage = () => {
+import Doctors from "../../components/Doctors/Doctors";
+const DoctorPage = () => {
   return (
     <div className="bg-white min-h-screen">
-
       <div className="relative w-full h-[300px] flex items-center bg-gray-100 overflow-hidden">
         {/* Đè style inline để thay ảnh nền khác cho trang About */}
         <div
@@ -24,25 +20,18 @@ const AboutPage = () => {
         </div>
         <div className="container mx-auto px-10 relative z-10 text-white">
           <p className="font-medium mb-2 uppercase tracking-wide text-sm opacity-90">
-            Trang chủ / Giới thiệu
+            Trang chủ / Bác Sĩ
           </p>
           <h1 className="text-5xl font-serif font-bold">Về chúng tôi</h1>
         </div>
       </div>
-
-      {/* 2. Welcome Section (Ảnh 2 bác sĩ & List) */}
-      <WelcomeSection />
-
-      {/* 3. Testimonial (Quote nền xanh) */}
+      <Doctors />
       <TestimonialSection />
-
-      {/* 4. News Section (Tin tức) */}
       <NewsSection />
-
-      {/* 5. Contact Info (4 ô xanh dưới cùng) */}
       <Contactinfo />
     </div>
   );
 };
 
-export default AboutPage;
+ 
+export default DoctorPage;
