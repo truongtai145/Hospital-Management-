@@ -18,18 +18,21 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await api.post("/login", { email, password });
+      const res = await api.post("/auth/login", { email, password });
 
-      // Lưu token và role vào localStorage (KHÔNG dùng trong artifacts thực tế)
-      // Nhưng ở đây cần thiết cho flow authentication
+      const { access_token, refresh_token, user } = res.data;
+
       if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("role", res.data.user.role);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("access_token", access_token);
+        if (refresh_token) {
+          localStorage.setItem("refresh_token", refresh_token);
+        }
+        localStorage.setItem("role", user.role);
+        localStorage.setItem("user", JSON.stringify(user));
       }
 
       // Điều hướng dựa trên quyền hạn
-      switch (res.data.user.role) {
+      switch (user.role) {
         case "admin":
           navigate("/admin");
           break;

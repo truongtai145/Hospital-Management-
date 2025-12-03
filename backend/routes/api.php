@@ -5,17 +5,11 @@ use Illuminate\Support\Facades\Route;
 // --- THÊM DÒNG NÀY ---
 use Illuminate\Support\Facades\DB; 
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// --- DÁN ĐOẠN NÀY VÀO CUỐI FILE ---
 Route::get('/test-db', function () {
     try {
         DB::connection()->getPdo();
@@ -32,3 +26,5 @@ Route::get('/test-db', function () {
         ], 500);
     }
 });
+
+require __DIR__.'/api/auth.php';

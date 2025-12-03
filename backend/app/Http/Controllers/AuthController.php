@@ -1,159 +1,342 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use App\Models\Admin;
-use App\Models\Doctor;
+use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Patient;
 use App\Models\RefreshToken;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class AuthController extends Controller
 {
-    // Đăng ký
+    /**
+     * Đăng ký tài khoản mới
+     */
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'role' => 'nullable|in:patient,doctor',
             'full_name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'date_of_birth' => 'nullable|date',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:6',
+            'role' => 'required|in:patient',
             'gender' => 'nullable|in:male,female,other',
-            'insurance_number' => 'nullable|string|max:100',
-            'allergies' => 'nullable|string',
-            'medical_history' => 'nullable|string',
-            'avatar_url' => 'nullable|url',
-            'department_id' => 'nullable|exists:departments,id',
-            'specialization' => 'nullable|string|max:255',
-            'license_number' => 'nullable|string|max:100|unique:doctors,license_number',
-            'education' => 'nullable|string',
-            'experience_years' => 'nullable|integer|min:0',
-            'biography' => 'nullable|string',
-            'consultation_fee' => 'nullable|numeric|min:0',
-            'device_info' => 'nullable|string|max:255',
+            'date_of_birth' => 'nullable|date',
+            'address' => 'nullable|string',
+            'phone' => 'nullable|string|max:20',
         ]);
 
-        $data = $validator->validate();
-        $role = $data['role'] ?? 'patient';
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-        $user = DB::transaction(function () use ($data, $role) {
+        try {
+            // Tạo user
             $user = User::create([
-                'email' => $data['email'],
-                'password' => Hash::make($data['password']),
-                'role' => $role,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => $request->role,
+                'is_active' => true,
             ]);
 
-            $profilePayload = [
+            // Tạo patient profile
+            Patient::create([
                 'user_id' => $user->id,
-                'full_name' => $data['full_name'],
-                'phone' => $data['phone'] ?? null,
-                'avatar_url' => $data['avatar_url'] ?? null,
-            ];
+                'full_name' => $request->full_name,
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'date_of_birth' => $request->date_of_birth,
+                'gender' => $request->gender,
+            ]);
 
-            if ($role === 'doctor') {
-                Doctor::create(array_merge($profilePayload, [
-                    'department_id' => $data['department_id'] ?? null,
-                    'specialization' => $data['specialization'] ?? null,
-                    'license_number' => $data['license_number'] ?? null,
-                    'education' => $data['education'] ?? null,
-                    'experience_years' => $data['experience_years'] ?? null,
-                    'biography' => $data['biography'] ?? null,
-                    'consultation_fee' => $data['consultation_fee'] ?? null,
-                    'is_available' => true,
-                ]));
-            } else {
-                Patient::create(array_merge($profilePayload, [
-                    'address' => $data['address'] ?? null,
-                    'date_of_birth' => $data['date_of_birth'] ?? null,
-                    'gender' => $data['gender'] ?? null,
-                    'insurance_number' => $data['insurance_number'] ?? null,
-                    'allergies' => $data['allergies'] ?? null,
-                    'medical_history' => $data['medical_history'] ?? null,
-                ]));
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Đăng ký thành công',
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                ]
+            ], 201);
 
-            return $user;
-        });
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-        $refreshToken = $this->issueRefreshToken($user, $request);
-
-        return response()->json([
-            'message' => 'Registered successfully',
-            'user' => $this->formatUserResponse($user),
-            'token' => $token,
-            'refresh_token' => $refreshToken,
-        ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đăng ký thất bại: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    // Đăng nhập
+    /**
+     * Đăng nhập với JWT
+     */
     public function login(Request $request)
     {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|string',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Tìm user
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            return response()->json([
+                'success' => false,
+                'message' => 'Email hoặc mật khẩu không chính xác'
+            ], 401);
         }
 
         if (!$user->is_active) {
-            return response()->json(['message' => 'Account is disabled'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Tài khoản đã bị khóa'
+            ], 403);
         }
 
+        // Tạo JWT Access Token (15 phút)
+        $accessToken = $this->createAccessToken($user);
+
+        // Tạo Refresh Token (30 ngày) và lưu vào DB
+        $refreshToken = $this->createRefreshToken($user, $request);
+
+        // Cập nhật last_login
         $user->update(['last_login' => now()]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-        $refreshToken = $this->issueRefreshToken($user, $request);
+        // Load profile
+        $profile = null;
+        switch ($user->role) {
+            case 'patient':
+                $profile = $user->patient;
+                break;
+            case 'doctor':
+                $profile = $user->doctor;
+                break;
+            case 'admin':
+                $profile = $user->adminProfile;
+                break;
+        }
 
         return response()->json([
-            'message' => 'Login successfully',
-            'user'    => $this->formatUserResponse($user),
-            'token'   => $token,
-            'refresh_token' => $refreshToken,
-        ]);
+            'success' => true,
+            'message' => 'Đăng nhập thành công',
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken->token,
+            'token_type' => 'Bearer',
+            'expires_in' => 900, // 15 phút
+            'user' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'role' => $user->role,
+                'profile' => $profile,
+            ]
+        ], 200);
     }
 
-    protected function issueRefreshToken(User $user, Request $request): string
+    /**
+     * Đăng xuất
+     */
+    public function logout(Request $request)
     {
-        $token = Str::uuid()->toString() . Str::random(40);
+        try {
+            $token = $request->bearerToken();
+            
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token not provided'
+                ], 400);
+            }
 
-        $user->refreshTokens()->create([
-            'token' => $token,
-            'device_info' => $request->input('device_info', $request->header('User-Agent')),
-            'ip_address' => $request->ip(),
-            'expires_at' => now()->addDays(30),
-        ]);
+            // Decode token để lấy user_id
+            $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
+            
+            // Revoke refresh token
+            if ($request->has('refresh_token')) {
+                RefreshToken::where('token', $request->refresh_token)
+                    ->where('user_id', $decoded->sub)
+                    ->update(['is_revoked' => true]);
+            }
 
-        return $token;
+            // JWT không thể invalidate, nhưng ta đã revoke refresh token
+            // Client phải tự xóa token
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đăng xuất thành công'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đăng xuất thất bại: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    protected function formatUserResponse(User $user): array
+    /**
+     * Lấy thông tin user từ token
+     */
+    public function me(Request $request)
     {
-        $user->loadMissing(['patient', 'doctor', 'adminProfile']);
+        try {
+            $token = $request->bearerToken();
+            
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token not provided'
+                ], 401);
+            }
 
-        return [
-            'id' => $user->id,
+            // Decode và verify token
+            $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
+            
+            // Lấy user từ DB
+            $user = User::find($decoded->sub);
+            
+            if (!$user || !$user->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found or inactive'
+                ], 401);
+            }
+
+            // Load profile
+            $profile = null;
+            switch ($user->role) {
+                case 'patient':
+                    $profile = $user->patient;
+                    break;
+                case 'doctor':
+                    $profile = $user->doctor;
+                    break;
+                case 'admin':
+                    $profile = $user->adminProfile;
+                    break;
+            }
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'is_active' => $user->is_active,
+                    'last_login' => $user->last_login,
+                    'profile' => $profile,
+                ]
+            ], 200);
+
+        } catch (\Firebase\JWT\ExpiredException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token expired'
+            ], 401);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid token'
+            ], 401);
+        }
+    }
+
+    /**
+     * Refresh access token
+     */
+    public function refresh(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'refresh_token' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Refresh token is required'
+            ], 422);
+        }
+
+        // Kiểm tra refresh token trong DB
+        $refreshToken = RefreshToken::where('token', $request->refresh_token)
+            ->where('is_revoked', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$refreshToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired refresh token'
+            ], 401);
+        }
+
+        $user = $refreshToken->user;
+
+        if (!$user->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User account is inactive'
+            ], 403);
+        }
+
+        // Tạo access token mới
+        $newAccessToken = $this->createAccessToken($user);
+
+        return response()->json([
+            'success' => true,
+            'access_token' => $newAccessToken,
+            'token_type' => 'Bearer',
+            'expires_in' => 900, // 15 phút
+        ], 200);
+    }
+
+    /**
+     * Tạo JWT Access Token
+     */
+    private function createAccessToken(User $user)
+    {
+        $payload = [
+            'iss' => env('APP_URL'), // Issuer
+            'sub' => $user->id, // Subject (user ID)
+            'iat' => time(), // Issued at
+            'exp' => time() + (15 * 60), // Expiration (15 phút)
             'email' => $user->email,
             'role' => $user->role,
-            'is_active' => $user->is_active,
-            'last_login' => $user->last_login,
-            'profile' => match ($user->role) {
-                'doctor' => $user->doctor,
-                'admin' => $user->adminProfile,
-                default => $user->patient,
-            },
         ];
+
+        return JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+    }
+
+    /**
+     * Tạo Refresh Token
+     */
+    private function createRefreshToken(User $user, Request $request)
+    {
+        return RefreshToken::create([
+            'user_id' => $user->id,
+            'token' => Str::random(100),
+            'device_info' => $request->userAgent(),
+            'ip_address' => $request->ip(),
+            'expires_at' => Carbon::now()->addDays(30),
+            'is_revoked' => false,
+        ]);
     }
 }
