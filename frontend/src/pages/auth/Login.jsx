@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../../api/axios";
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, Activity } from "lucide-react";
-
+import { toast } from "react-toastify";
 export default function Login() {
   const navigate = useNavigate();
   
@@ -21,7 +21,7 @@ export default function Login() {
       const res = await api.post("/auth/login", { email, password });
 
       const { access_token, refresh_token, user } = res.data;
-
+       toast.success("Đăng nhập thành công!");
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem("access_token", access_token);
         if (refresh_token) {
@@ -37,15 +37,16 @@ export default function Login() {
           navigate("/admin");
           break;
         case "doctor":
-          navigate("/doctor");
+          navigate("/doctor-dashboard");
           break;
         case "patient":
         default:
-          navigate("/patient");
+          navigate("/");
       }
     } catch (err) {
       const message = err.response?.data?.message || "Email hoặc mật khẩu không chính xác. Vui lòng thử lại.";
       setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

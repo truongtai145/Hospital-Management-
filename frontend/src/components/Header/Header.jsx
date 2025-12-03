@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import Button from "../Button/Button";
 import { Phone, Clock, MapPin, Search, User, LogOut, ChevronDown, FileText } from "lucide-react";
 
@@ -7,11 +8,10 @@ const Header = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  // Kiểm tra trạng thái đăng nhập khi load trang
+  // Kiểm tra trạng thái đăng nhập khi component được render
   useEffect(() => {
-    // Lấy thông tin user từ localStorage (Đã lưu ở bước Login)
     const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
 
     if (storedUser && token) {
       setUser(JSON.parse(storedUser));
@@ -20,11 +20,14 @@ const Header = () => {
 
   // Xử lý Đăng xuất
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     localStorage.removeItem("role");
+    
     setUser(null);
-    navigate("/login"); // Chuyển về trang đăng nhập
+    toast.success("Đăng xuất thành công!");
+    navigate("/login");
   };
 
   const NavLink = ({ to, label }) => (
@@ -40,7 +43,9 @@ const Header = () => {
 
   return (
     <header className="w-full bg-white font-sans">
-      {/* Top Bar */}
+      {/* =================================================================== */}
+      {/* Top Bar (GIỮ NGUYÊN) */}
+      {/* =================================================================== */}
       <div className="hidden md:flex justify-between items-center py-5 container mx-auto max-w-7xl px-10">
         <Link
           to="/"
@@ -87,7 +92,9 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* =================================================================== */}
+      {/* Navigation (PHẦN NÀY ĐÃ ĐƯỢC CẬP NHẬT) */}
+      {/* =================================================================== */}
       <nav className="bg-primary text-white sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto max-w-7xl px-10 py-4 flex justify-between items-center">
           
@@ -103,7 +110,6 @@ const Header = () => {
           <div className="flex items-center gap-4 lg:gap-6">
             <Search className="w-6 h-6 cursor-pointer hover:text-secondary transition duration-300" />
 
-            {/* --- ĐÃ DI CHUYỂN NÚT ĐẶT LỊCH LÊN ĐÂY --- */}
             <Link to="/appointment">
               <Button
                 variant="light"
@@ -113,38 +119,42 @@ const Header = () => {
               </Button>
             </Link>
             
-            {/* --- ĐÃ DI CHUYỂN KHU VỰC NGƯỜI DÙNG XUỐNG ĐÂY --- */}
             {user ? (
-              // 1. Nếu ĐÃ ĐĂNG NHẬP -> Hiện tên + Dropdown Menu
+              // 1. Nếu ĐÃ ĐĂNG NHẬP
               <div className="relative group">
-                <div className="flex items-center gap-2 cursor-pointer py-2 hover:opacity-90">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white font-bold border-2 border-white">
-                    {/* Lấy ký tự đầu của tên làm avatar */}
-                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                {/* Khu vực hover để kích hoạt dropdown */}
+                <div className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white font-bold border-2 border-white flex-shrink-0">
+                    {user.profile?.full_name ? user.profile.full_name.charAt(0).toUpperCase() : "U"}
                   </div>
-                  <span className="font-medium text-sm hidden lg:block max-w-[150px] truncate">
-                    Xin chào, {user.name}
+                  <span className="font-medium text-sm hidden lg:block whitespace-nowrap">
+                    {/* ✅ SỬA LẠI: Đã bỏ giới hạn chiều rộng và cắt ngắn tên */}
+                    Xin chào, {user.profile?.full_name || user.email}
                   </span>
                   <ChevronDown className="w-4 h-4 transition-transform group-hover:rotate-180" />
                 </div>
 
-                {/* Dropdown Menu (Hiện khi hover vào group) */}
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white text-primary rounded-lg shadow-xl overflow-hidden hidden group-hover:block transition-all transform origin-top-right border border-gray-100 animate-fadeIn">
+                {/* ✅ SỬA LẠI: Cải thiện hiệu ứng xuất hiện của Dropdown Menu */}
+                <div 
+                  className="absolute right-0 top-full mt-2 w-56 bg-white text-primary rounded-lg shadow-2xl overflow-hidden border border-gray-100 
+                  transform origin-top-right transition-all duration-300 ease-in-out 
+                  opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 pointer-events-none group-hover:pointer-events-auto"
+                >
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                    <p className="text-sm font-semibold truncate">{user.profile?.full_name || 'Người dùng'}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
+
                   <Link 
-                    to={
-                      user.role === 'admin' ? '/admin' : 
-                      user.role === 'doctor' ? '/doctor' : 
-                      '/patient' // Đường dẫn hồ sơ bệnh nhân
-                    } 
-                    className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 transition-colors"
+                    to={user.role === 'admin' ? '/admin' : user.role === 'doctor' ? '/doctor' : '/patient'} 
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors"
                   >
-                    <User size={16} /> Hồ sơ của tôi
+                    <User size={16} className="text-secondary"/> Hồ sơ của tôi
                   </Link>
                   
-                  {/* Nếu là bệnh nhân thì hiện lịch sử khám (Ví dụ) */}
                   {user.role === 'patient' && (
-                    <Link to="/patient/history" className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 transition-colors">
-                      <FileText size={16} /> Lịch sử khám
+                    <Link to="/patient/history" className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors">
+                      <FileText size={16} className="text-secondary"/> Lịch sử khám
                     </Link>
                   )}
 
@@ -152,14 +162,14 @@ const Header = () => {
                   
                   <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-red-500 hover:bg-red-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors text-left"
                   >
                     <LogOut size={16} /> Đăng xuất
                   </button>
                 </div>
               </div>
             ) : (
-              // 2. Nếu CHƯA ĐĂNG NHẬP -> Hiện nút Đăng nhập
+              // 2. Nếu CHƯA ĐĂNG NHẬP (GIỮ NGUYÊN)
               <Link 
                 to="/login"
                 className="text-white hover:text-secondary font-medium text-sm lg:text-base flex items-center gap-1 transition-colors"
