@@ -1,15 +1,16 @@
 import axios from 'axios';
 
-// Cấu hình base URL
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+ 
+  baseURL: `${import.meta.env.VITE_API_URL}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 });
 
-// Request Interceptor - Tự động thêm JWT token vào header
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
@@ -18,75 +19,53 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response Interceptor - Xử lý JWT expiration và refresh token
+
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Nếu lỗi 401 và token expired
-    if (
-      error.response?.status === 401 && 
-      error.response?.data?.error === 'token_expired' &&
-      !originalRequest._retry
-    ) {
-      originalRequest._retry = true;
+    // Chỉ xử lý lỗi 401 và request chưa được thử lại
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true; // Đánh dấu là đã thử lại
 
       try {
         const refreshToken = localStorage.getItem('refresh_token');
-        
         if (!refreshToken) {
+          // Nếu không có refresh token, không thể làm gì hơn
           throw new Error('No refresh token available');
         }
 
-        // Gọi API refresh token
-      const response = await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/auth/refresh`,
-          { refresh_token: refreshToken },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          }
-        );
+        // Gọi API để làm mới token. Dùng chính instance 'api' đã cấu hình.
+        const response = await api.post('/auth/refresh', { refresh_token: refreshToken });
 
         const { access_token } = response.data;
         
-        // Lưu access token mới
+        // Lưu token mới vào localStorage
         localStorage.setItem('access_token', access_token);
         
-        // Retry request với token mới
+        // Cập nhật header cho request gốc và thực hiện lại nó
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return api(originalRequest);
 
       } catch (refreshError) {
-        // Nếu refresh token thất bại hoặc hết hạn
         console.error('Refresh token failed:', refreshError);
         
-        // Clear storage
+        // Nếu làm mới token thất bại, xóa hết thông tin và chuyển hướng về trang đăng nhập
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
         localStorage.removeItem('role');
         
-        // Redirect to login page
-        window.location.href = '/login';
+        window.location.href = '/login'; 
         return Promise.reject(refreshError);
       }
     }
 
-    // Xử lý các lỗi khác
-    if (error.response?.status === 403) {
-      console.error('Forbidden: You do not have permission');
-    }
-
+    // Trả về các lỗi khác (không phải 401)
     return Promise.reject(error);
   }
 );

@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-// --- THÊM DÒNG NÀY ---
+
 use Illuminate\Support\Facades\DB; 
 
 
@@ -27,4 +27,4 @@ Route::get('/test-db', function () {
     }
 });
 
-require __DIR__.'/api/auth.php';
+require __DIR__.'/../routes/api/auth.php';

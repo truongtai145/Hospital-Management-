@@ -5,7 +5,7 @@ import {
   Mail, Lock, Eye, EyeOff, ArrowLeft, Activity, 
   User, MapPin, Calendar 
 } from "lucide-react";
-
+import { toast } from "react-toastify";
 // Form state được đơn giản hóa chỉ cho bệnh nhân
 const baseForm = {
     role: "patient",
@@ -61,10 +61,12 @@ export default function Register() {
         setLoading(true);
         try {
             await api.post("/auth/register", buildPayload());
+            toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
             navigate("/login");
         } catch (err) {
             const message = err.response?.data?.message ?? "Đăng ký thất bại, vui lòng thử lại";
             setError(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }
