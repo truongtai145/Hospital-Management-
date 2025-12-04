@@ -12,14 +12,14 @@ const Services = () => {
   return (
     <section className="bg-white py-20 overflow-hidden">
       <div className="container mx-auto px-4">
-        {/* --- Phần tiêu đề Section --- */}
+   
         <div className="text-center mb-16">
           <p className="text-secondary font-bold uppercase tracking-widest text-lg mb-3">
-            {/* Đã tăng từ text-sm lên text-lg */}
+     
             Sự chăm sóc bạn có thể tin tưởng
           </p>
           <h2 className="text-5xl text-primary font-serif">
-            {/* Đã tăng từ text-4xl lên text-5xl */}
+         
             Dịch vụ của chúng tôi
           </h2>
         </div>
@@ -37,7 +37,7 @@ const Services = () => {
                       : "bg-white text-primary hover:bg-accent hover:scale-105"
                   }`}
               >
-                {/* Tăng kích thước icon một chút để cân đối với chữ */}
+               
                 <div className="w-10 h-10 mb-3">{item.icon}</div>
                 <span className="font-bold">{item.label}</span>
               </button>
@@ -47,7 +47,7 @@ const Services = () => {
             </button>
           </div>
 
-          {/* Content */}
+       
           <div className="md:w-3/4 flex flex-col md:flex-row items-center gap-10">
             <div className="space-y-8 md:w-1/2">
               <h3 className="text-4xl text-primary font-serif">

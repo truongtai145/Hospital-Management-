@@ -43,9 +43,7 @@ const Header = () => {
 
   return (
     <header className="w-full bg-white font-sans">
-      {/* =================================================================== */}
-      {/* Top Bar (GIỮ NGUYÊN) */}
-      {/* =================================================================== */}
+      
       <div className="hidden md:flex justify-between items-center py-5 container mx-auto max-w-7xl px-10">
         <Link
           to="/"
@@ -54,7 +52,7 @@ const Header = () => {
           Med<span className="text-secondary">dical</span>
         </Link>
 
-        {/* Thông tin liên hệ */}
+    
         <div className="flex gap-10 text-primary">
           <div className="flex items-center gap-3">
             <Phone className="w-6 h-6 text-secondary" />
@@ -92,9 +90,7 @@ const Header = () => {
         </div>
       </div>
 
-      {/* =================================================================== */}
-      {/* Navigation (PHẦN NÀY ĐÃ ĐƯỢC CẬP NHẬT) */}
-      {/* =================================================================== */}
+     
       <nav className="bg-primary text-white sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto max-w-7xl px-10 py-4 flex justify-between items-center">
           
@@ -120,21 +116,21 @@ const Header = () => {
             </Link>
             
             {user ? (
-              // 1. Nếu ĐÃ ĐĂNG NHẬP
+         
               <div className="relative group">
-                {/* Khu vực hover để kích hoạt dropdown */}
+           
                 <div className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/10 transition-colors">
                   <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white font-bold border-2 border-white flex-shrink-0">
                     {user.profile?.full_name ? user.profile.full_name.charAt(0).toUpperCase() : "U"}
                   </div>
                   <span className="font-medium text-sm hidden lg:block whitespace-nowrap">
-                    {/* ✅ SỬA LẠI: Đã bỏ giới hạn chiều rộng và cắt ngắn tên */}
+                
                     Xin chào, {user.profile?.full_name || user.email}
                   </span>
                   <ChevronDown className="w-4 h-4 transition-transform group-hover:rotate-180" />
                 </div>
 
-                {/* ✅ SỬA LẠI: Cải thiện hiệu ứng xuất hiện của Dropdown Menu */}
+              
                 <div 
                   className="absolute right-0 top-full mt-2 w-56 bg-white text-primary rounded-lg shadow-2xl overflow-hidden border border-gray-100 
                   transform origin-top-right transition-all duration-300 ease-in-out 
@@ -169,7 +165,7 @@ const Header = () => {
                 </div>
               </div>
             ) : (
-              // 2. Nếu CHƯA ĐĂNG NHẬP (GIỮ NGUYÊN)
+              
               <Link 
                 to="/login"
                 className="text-white hover:text-secondary font-medium text-sm lg:text-base flex items-center gap-1 transition-colors"

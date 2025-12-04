@@ -28,3 +28,4 @@ Route::get('/test-db', function () {
 });
 
 require __DIR__.'/../routes/api/auth.php';
+require __DIR__.'/../routes/api/patient.php';

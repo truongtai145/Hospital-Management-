@@ -9,8 +9,8 @@ const Appointment = () => {
         <div className="md:w-1/2 pr-10 pt-10">
           <h2 className="text-4xl text-secondary font-bold mb-4">Đặt lịch khám</h2>
           <h3 className="text-5xl text-primary font-serif mb-6">Đặt lịch hẹn</h3>
-          <p className="text-gray-600 mb-8">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque placerat scelerisque tortor ornare ornare.
+          <p className="text-gray-600 mb-15">
+        Quan tâm bản thân bắt đầu bằng một cuộc hẹn dành riêng cho bạn. Chỉ cần vài phút để đặt lịch, bạn đã chủ động dành thời gian chăm sóc sức khỏe và tinh thần của mình. Sự ưu tiên nhỏ hôm nay sẽ mang lại những thay đổi tích cực cho ngày mai. Hãy để chúng tôi đồng hành cùng bạn trong hành trình yêu thương chính mình.
           </p>
         </div>
         

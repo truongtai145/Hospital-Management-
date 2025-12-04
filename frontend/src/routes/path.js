@@ -1,3 +1,5 @@
+import PatientProfile from "../pages/Patient/PatientProfile";
+
 export const PATHS = {
   // --- PUBLIC ---
   HOME: "/",
@@ -7,8 +9,10 @@ export const PATHS = {
   SERVICES: "/services",
   DOCTORS: "/doctors",
   NEWS: "/news",
-  NEWS_DETAIL: "/news/:id", // Thêm cái này cho trang chi tiết tin tức
+  NEWS_DETAIL: "/news/:id", 
   CONTACT: "/contact",
+  PATIENT_PROFILE: "/patient", 
+  PATIENT_HISTORY: "/patient/history", 
   
   // --- DASHBOARD ROLES ---
   ADMIN: "/admin",
