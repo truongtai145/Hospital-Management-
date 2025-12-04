@@ -12,7 +12,7 @@ const ContactPage = lazy(() => import("../pages/Contact/ContactPage"));
 const NewsPage = lazy(() => import("../pages/Blog/BlogPage"));
 const SingleNewsPage = lazy(() => import("../pages/Blog/SingleNewsPage"));
 const PatientProfile =lazy(() =>import("../pages/Patient/PatientProfile"));
-
+const Appointment =lazy(() =>import("../components/Appointment/Appointment") );
 const AdminDashboard = lazy(() => import("../pages/Admin/AdminDashboard/AdminDashboard"));
 const DoctorPage = lazy(() => import("../pages/Doctors/DoctorDashboard/DoctorDashboard"));
 export const ROUTES_CONFIG = [
@@ -70,6 +70,11 @@ export const ROUTES_CONFIG = [
     layout: "public", 
   isPrivate: true, 
   roles: ['patient'], 
+  },
+  {
+    path: PATHS.APPOINTMENT,
+    element: Appointment,
+    layout:"public",
   },
 
   // --- PRIVATE / ADMIN (Layout None hoặc AdminLayout sau này) ---

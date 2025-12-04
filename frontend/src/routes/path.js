@@ -13,7 +13,7 @@ export const PATHS = {
   CONTACT: "/contact",
   PATIENT_PROFILE: "/patient", 
   PATIENT_HISTORY: "/patient/history", 
-  
+  APPOINTMENT :"/appointment",
   // --- DASHBOARD ROLES ---
   ADMIN: "/admin",
   DOCTOR_DASHBOARD: "/doctor-dashboard",  

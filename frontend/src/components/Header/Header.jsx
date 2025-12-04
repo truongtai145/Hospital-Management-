@@ -72,7 +72,7 @@ const Header = () => {
                 Giờ làm việc
               </p>
               <p className="text-secondary font-medium text-lg leading-tight">
-                09:00 - 20:00
+                08:00 - 20:00
               </p>
             </div>
           </div>
