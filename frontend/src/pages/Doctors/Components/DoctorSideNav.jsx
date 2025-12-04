@@ -12,7 +12,7 @@ const DoctorSideNav = () => {
   const location = useLocation();
 
   const menuItems = [
-    { name: 'Tổng quan', path: '/doctor', icon: LayoutDashboard },
+    { name: 'Tổng quan', path: '/doctor-dashboard', icon: LayoutDashboard },
     {name: 'Hồ sơ cá nhân', path: '/doctor/profile', icon: Settings },
     { name: 'Thông tin bệnh nhân', path: '/doctor/patients', icon: Users },
     { name: 'Lịch hẹn khám', path: '/doctor/appointments', icon: CalendarClock },
