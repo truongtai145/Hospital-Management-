@@ -14,48 +14,55 @@ class AppointmentController extends Controller
 {
     
     public function index(Request $request)
-    {
-        $user = Auth::user();
-        $query = Appointment::with(['doctor.department', 'patient']);
+{
+    $user = Auth::user();
 
-        // Nếu là bệnh nhân, chỉ lấy lịch hẹn của chính họ
-        if ($user->role === 'patient') {
-            $patient = Patient::where('user_id', $user->id)->first();
-            if ($patient) {
-                $query->where('patient_id', $patient->id);
-            } else {
-                return response()->json(['success' => false, 'data' => []]); 
-            }
-        }
+    $query = Appointment::with(['doctor.department', 'patient']);
 
-        // Sắp xếp lịch hẹn mới nhất lên đầu
-        $appointments = $query->orderBy('appointment_time', 'desc')->get();
+    /**
+     * 1. Nếu là bệnh nhân → chỉ lấy lịch hẹn của họ
+     */
+    if ($user->role === 'patient') {
+        $patient = Patient::where('user_id', $user->id)->first();
 
-        return response()->json([
-            'success' => true,
-            'data' => $appointments
-        ]);
-         if ($user->role === 'doctor') {
-        $doctorProfile = Doctor::where('user_id', $user->id)->first();
-        if ($doctorProfile) {
-            $query->where('doctor_id', $doctorProfile->id);
-        } else {
+        if (!$patient) {
             return response()->json(['success' => false, 'data' => []]);
         }
+
+        $query->where('patient_id', $patient->id);
     }
-    
-   
+
+    /**
+     * 2. Nếu là bác sĩ → chỉ lấy lịch hẹn của bác sĩ đó
+     */
+    if ($user->role === 'doctor') {
+        $doctorProfile = Doctor::where('user_id', $user->id)->first();
+
+        if (!$doctorProfile) {
+            return response()->json(['success' => false, 'data' => []]);
+        }
+
+        $query->where('doctor_id', $doctorProfile->id);
+    }
+
+    /**
+     * 3. Nếu có lọc theo ngày
+     */
     if ($request->has('date')) {
         $query->whereDate('appointment_time', $request->date);
     }
 
-    $appointments = $query->orderBy('appointment_time', 'asc')->get(); // Sắp xếp theo giờ tăng dần
+    /**
+     * 4. Trả về danh sách lịch hẹn (sắp xếp tăng dần theo giờ)
+     */
+    $appointments = $query->orderBy('appointment_time', 'asc')->get();
 
     return response()->json([
         'success' => true,
-        'data' => $appointments
+        'data' => $appointments,
     ]);
-    }
+}
+
 
     
      // Tạo một lịch hẹn mới.

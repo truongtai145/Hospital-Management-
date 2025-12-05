@@ -16,35 +16,76 @@ export default function AppRoutes() {
     </div>
   );
 
+  // ✅ HÀM MỚI: Render nested routes đệ quy
+  const renderRoutes = (routes) => {
+    return routes.map((route, index) => {
+      const PageComponent = route.element;
+      
+      // ✅ Kiểm tra nếu có children (nested routes)
+      if (route.children && route.children.length > 0) {
+        return (
+          <Route
+            key={route.path || index}
+            path={route.path}
+            element={<PageComponent />}
+          >
+            {/* Render tất cả children routes */}
+            {route.children.map((child, childIndex) => {
+              const ChildComponent = child.element;
+              
+              // Index route (route mặc định)
+              if (child.index) {
+                return (
+                  <Route
+                    key={`${route.path}-index`}
+                    index
+                    element={<ChildComponent />}
+                  />
+                );
+              }
+              
+              // Named child route
+              return (
+                <Route
+                  key={child.path || childIndex}
+                  path={child.path}
+                  element={<ChildComponent />}
+                />
+              );
+            })}
+          </Route>
+        );
+      }
+      
+      // ✅ Route thông thường (không có children)
+      let ElementToRender;
+
+      if (route.layout === "public") {
+        // Nếu là public thì bọc trong MainLayout (Header + Footer)
+        ElementToRender = (
+          <MainLayout>
+            <PageComponent />
+          </MainLayout>
+        );
+      } else {
+        // Nếu là none thì render trần
+        ElementToRender = <PageComponent />;
+      }
+
+      return (
+        <Route 
+          key={route.path || index} 
+          path={route.path} 
+          element={ElementToRender} 
+        />
+      );
+    });
+  };
+
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
-        {ROUTES_CONFIG.map((route, index) => {
-          const PageComponent = route.element;
-          
-          // Xử lý Layout
-          let ElementToRender;
-
-          if (route.layout === "public") {
-            // Nếu là public thì bọc trong MainLayout (Header + Footer)
-            ElementToRender = (
-              <MainLayout>
-                <PageComponent />
-              </MainLayout>
-            );
-          } else {
-            // Nếu là none thì render trần
-            ElementToRender = <PageComponent />;
-          }
-
-          return (
-            <Route 
-              key={index} 
-              path={route.path} 
-              element={ElementToRender} 
-            />
-          );
-        })}
+        {renderRoutes(ROUTES_CONFIG)}
       </Routes>
     </Suspense>
   );
