@@ -12,8 +12,9 @@ export const PATHS = {
   NEWS_DETAIL: "/news/:id", 
   CONTACT: "/contact",
   PATIENT_PROFILE: "/patient", 
-  PATIENT_HISTORY: "/patient/history", 
+PATIENT_APPOINTMENT_HISTORY: "/patient/history", 
   APPOINTMENT :"/appointment",
+
   // --- DASHBOARD ROLES ---
   ADMIN: "/admin",
   DOCTOR_DASHBOARD: "/doctor-dashboard",  

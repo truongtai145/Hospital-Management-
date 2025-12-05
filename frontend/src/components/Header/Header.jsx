@@ -8,7 +8,6 @@ const Header = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  // Kiểm tra trạng thái đăng nhập khi component được render
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("access_token");
@@ -18,13 +17,12 @@ const Header = () => {
     }
   }, []);
 
-  // Xử lý Đăng xuất
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     localStorage.removeItem("role");
-    
+
     setUser(null);
     toast.success("Đăng xuất thành công!");
     navigate("/login");
@@ -43,7 +41,7 @@ const Header = () => {
 
   return (
     <header className="w-full bg-white font-sans">
-      
+      {/* Top Header Info */}
       <div className="hidden md:flex justify-between items-center py-5 container mx-auto max-w-7xl px-10">
         <Link
           to="/"
@@ -52,48 +50,34 @@ const Header = () => {
           Med<span className="text-secondary">dical</span>
         </Link>
 
-    
         <div className="flex gap-10 text-primary">
           <div className="flex items-center gap-3">
             <Phone className="w-6 h-6 text-secondary" />
             <div>
-              <p className="font-bold uppercase text-xs tracking-wide">
-                Khẩn cấp
-              </p>
-              <p className="text-secondary font-medium text-lg leading-tight">
-                (237) 681-812-255
-              </p>
+              <p className="font-bold uppercase text-xs tracking-wide">Khẩn cấp</p>
+              <p className="text-secondary font-medium text-lg">(237) 681-812-255</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Clock className="w-6 h-6 text-secondary" />
             <div>
-              <p className="font-bold uppercase text-xs tracking-wide">
-                Giờ làm việc
-              </p>
-              <p className="text-secondary font-medium text-lg leading-tight">
-                08:00 - 20:00
-              </p>
+              <p className="font-bold uppercase text-xs tracking-wide">Giờ làm việc</p>
+              <p className="text-secondary font-medium text-lg">08:00 - 20:00</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <MapPin className="w-6 h-6 text-secondary" />
             <div>
-              <p className="font-bold uppercase text-xs tracking-wide">
-                Địa điểm
-              </p>
-              <p className="text-secondary font-medium text-lg leading-tight">
-                0123 Quận 1, TP.HCM
-              </p>
+              <p className="font-bold uppercase text-xs tracking-wide">Địa điểm</p>
+              <p className="text-secondary font-medium text-lg">0123 Quận 1, TP.HCM</p>
             </div>
           </div>
         </div>
       </div>
 
-     
+      {/* Navigation */}
       <nav className="bg-primary text-white sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto max-w-7xl px-10 py-4 flex justify-between items-center">
-          
           <ul className="flex gap-8 lg:gap-12 font-medium text-base lg:text-lg">
             <NavLink to="/" label="Trang chủ" />
             <NavLink to="/about" label="Giới thiệu" />
@@ -114,59 +98,74 @@ const Header = () => {
                 Đặt lịch hẹn
               </Button>
             </Link>
-            
+
+            {/* USER LOGIN DROPDOWN */}
             {user ? (
-         
               <div className="relative group">
-           
+                {/* Avatar + Greeting */}
                 <div className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/10 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white font-bold border-2 border-white flex-shrink-0">
-                    {user.profile?.full_name ? user.profile.full_name.charAt(0).toUpperCase() : "U"}
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white font-bold border-2 border-white">
+                    {user.profile?.full_name
+                      ? user.profile.full_name.charAt(0).toUpperCase()
+                      : "U"}
                   </div>
                   <span className="font-medium text-sm hidden lg:block whitespace-nowrap">
-                
                     Xin chào, {user.profile?.full_name || user.email}
                   </span>
                   <ChevronDown className="w-4 h-4 transition-transform group-hover:rotate-180" />
                 </div>
 
-              
-                <div 
-                  className="absolute right-0 top-full mt-2 w-56 bg-white text-primary rounded-lg shadow-2xl overflow-hidden border border-gray-100 
-                  transform origin-top-right transition-all duration-300 ease-in-out 
-                  opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 pointer-events-none group-hover:pointer-events-auto"
+                {/* Dropdown fixed */}
+                <div
+                  className="
+                    absolute right-0 top-full 
+                    w-56 bg-white text-primary rounded-lg shadow-2xl border border-gray-100
+                    opacity-0 scale-95 
+                    group-hover:opacity-100 group-hover:scale-100 
+                    transition-all duration-300 ease-in-out
+                    pointer-events-none group-hover:pointer-events-auto
+                    z-50
+                  "
                 >
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                    <p className="text-sm font-semibold truncate">{user.profile?.full_name || 'Người dùng'}</p>
+                    <p className="text-sm font-semibold truncate">
+                      {user.profile?.full_name || "Người dùng"}
+                    </p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
 
-                  <Link 
-                    to={user.role === 'admin' ? '/admin' : user.role === 'doctor' ? '/doctor' : '/patient'} 
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors"
+                  <Link
+                    to={
+                      user.role === "admin"
+                        ? "/admin"
+                        : user.role === "doctor"
+                        ? "/doctor"
+                        : "/patient"
+                    }
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition"
                   >
-                    <User size={16} className="text-secondary"/> Hồ sơ của tôi
+                    <User size={16} className="text-secondary" /> Hồ sơ của tôi
                   </Link>
-                  
-                  {user.role === 'patient' && (
-                    <Link to="/patient/history" className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors">
-                      <FileText size={16} className="text-secondary"/> Lịch sử khám
+
+                  {user.role === "patient" && (
+                    <Link
+                      to="/patient/history"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition"
+                    >
+                      <FileText size={16} className="text-secondary" /> Lịch sử khám
                     </Link>
                   )}
 
-                  <div className="border-t border-gray-100"></div>
-                  
-                  <button 
+                  <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 border-t border-gray-100 text-left"
                   >
                     <LogOut size={16} /> Đăng xuất
                   </button>
                 </div>
               </div>
             ) : (
-              
-              <Link 
+              <Link
                 to="/login"
                 className="text-white hover:text-secondary font-medium text-sm lg:text-base flex items-center gap-1 transition-colors"
               >

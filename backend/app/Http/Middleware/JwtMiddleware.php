@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // ← Thêm dòng này
+use Illuminate\Support\Facades\Auth; 
 use Symfony\Component\HttpFoundation\Response;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -42,17 +42,15 @@ class JwtMiddleware
                 ], 403);
             }
 
-            // ✅ Gán user vào request (cho $request->user())
+            // Gán user vào request (cho $request->user())
             $request->setUserResolver(function () use ($user) {
                 return $user;
             });
 
-            // ✅ QUAN TRỌNG: Set user vào Auth để Auth::user() hoạt động
+            //  Set user vào Auth để Auth::user() hoạt động
             Auth::setUser($user);
             
-            // Hoặc nếu muốn lưu vào request (tùy chọn)
-            // $request->merge(['auth_user' => $user]);
-
+         
             return $next($request);
 
         } catch (\Firebase\JWT\ExpiredException $e) {

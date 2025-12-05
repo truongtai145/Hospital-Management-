@@ -5,8 +5,7 @@ use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Middleware\JwtMiddleware;
 use App\Http\Middleware\RoleMiddleware;
 Route::middleware(['jwt.auth'])->group(function () {
-    
-    // tạo lịch hẹn mới 
+   
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
 
     // NHÓM API DÀNH CHO BỆNH NHÂN

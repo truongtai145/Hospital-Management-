@@ -15,6 +15,7 @@ const PatientProfile =lazy(() =>import("../pages/Patient/PatientProfile"));
 const Appointment =lazy(() =>import("../components/Appointment/Appointment") );
 const AdminDashboard = lazy(() => import("../pages/Admin/AdminDashboard/AdminDashboard"));
 const DoctorPage = lazy(() => import("../pages/Doctors/DoctorDashboard/DoctorDashboard"));
+const AppointmentHistory = lazy(() =>import("../pages/Patient/AppointmentHistory"));
 export const ROUTES_CONFIG = [
   // --- AUTH ---
   {
@@ -76,15 +77,23 @@ export const ROUTES_CONFIG = [
     element: Appointment,
     layout:"public",
   },
-
-  // --- PRIVATE / ADMIN (Layout None hoặc AdminLayout sau này) ---
-  {
-    path: PATHS.ADMIN,
-    element: AdminDashboard, // Nhớ bọc AdminLayout trong component này hoặc xử lý ở AppRoutes
-    layout: "none", // Hoặc "admin" nếu bạn cấu hình layout riêng trong AppRoutes
+   {
+   
+    path: PATHS.PATIENT_APPOINTMENT_HISTORY,
+    element: AppointmentHistory,
+    layout: "public",
+    isPrivate: true,
+    roles: ['patient'],
   },
 
-  // --- 404 ---
+  
+  {
+    path: PATHS.ADMIN,
+    element: AdminDashboard, 
+    layout: "none", 
+  },
+
+
   {
     path: PATHS.NOT_FOUND,
     element: () => <div className="text-center mt-20 font-bold text-xl">404 - Trang không tồn tại</div>,

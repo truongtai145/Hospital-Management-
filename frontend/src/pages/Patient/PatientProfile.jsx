@@ -3,7 +3,7 @@ import { api } from '../../api/axios';
 import { toast } from 'react-toastify';
 import { User, Phone, MapPin, Calendar, Shield, Save, Loader, Briefcase, Droplet, UserCheck } from 'lucide-react';
 
-// Input component tái sử dụng để code gọn gàng hơn
+
 // eslint-disable-next-line no-unused-vars
 const ProfileInput = ({ icon, label, name, value, onChange, type = 'text', required = false, as: Component = 'input', ...props }) => (
   <div>
@@ -32,24 +32,34 @@ const PatientProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/patient/profile');
-        if (response.data.data) { // Kiểm tra data trực tiếp
-          setProfile(response.data.data);
-        } else {
-           toast.error("Không tìm thấy dữ liệu hồ sơ.");
+  const fetchProfile = async () => {
+    setLoading(true);
+
+    try {
+      const response = await api.get('/patient/profile');
+
+      if (response.data.data) {
+        let p = response.data.data;
+
+        // --- FIX NGÀY CHUẨN ---
+        if (p.date_of_birth) {
+          const iso = p.date_of_birth;
+          p.date_of_birth = iso.split("T")[0];   // lấy phần YYYY-MM-DD
         }
-      } catch (error) {
-        toast.error("Không thể tải thông tin hồ sơ.");
-        console.error("Fetch profile error:", error);
-      } finally {
-        setLoading(false);
+        // -----------------------
+
+        setProfile(p); // <-- Bây giờ set mới đúng
       }
-    };
-    fetchProfile();
-  }, []);
+    } catch (error) {
+      console.error("Fetch profile error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProfile();
+}, []);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;

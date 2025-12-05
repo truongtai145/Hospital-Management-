@@ -8,14 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Patient;
-
+use Carbon\Carbon;
 class AppointmentController extends Controller
 {
-    /**
-     * Lấy danh sách lịch hẹn.
-     * Bệnh nhân chỉ thấy lịch hẹn của mình.
-     * Admin/Bác sĩ có thể thấy tất cả (sẽ được phân quyền ở route).
-     */
+    
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -27,12 +23,9 @@ class AppointmentController extends Controller
             if ($patient) {
                 $query->where('patient_id', $patient->id);
             } else {
-                return response()->json(['success' => false, 'data' => []]); // Trả về mảng rỗng nếu không có hồ sơ
+                return response()->json(['success' => false, 'data' => []]); 
             }
         }
-
-        // TODO: Thêm logic lọc cho bác sĩ (chỉ thấy lịch hẹn của mình)
-        // if ($user->role === 'doctor') { ... }
 
         // Sắp xếp lịch hẹn mới nhất lên đầu
         $appointments = $query->orderBy('appointment_time', 'desc')->get();
@@ -43,9 +36,9 @@ class AppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Tạo một lịch hẹn mới.
-     */
+    
+     // Tạo một lịch hẹn mới.
+     
    public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -53,11 +46,11 @@ class AppointmentController extends Controller
             'doctor_id' => 'required|exists:doctors,id',
             'appointment_time' => 'required|date|after:now',
             'reason' => 'required|string',
-            // Các trường thông tin bệnh nhân
+     
             'full_name' => 'required_without:user_id|string|max:255',
             'email' => 'required_without:user_id|email|max:255',
             'phone' => 'required_without:user_id|string|max:20',
-            // Các trường tùy chọn
+          
             'allergies_at_appointment' => 'nullable|string',
             'medical_history_at_appointment' => 'nullable|string',
         ]);
@@ -79,7 +72,7 @@ class AppointmentController extends Controller
                 return response()->json(['success' => false, 'message' => 'Không tìm thấy hồ sơ bệnh nhân cho tài khoản này.'], 404);
             }
         } else {
-            // Xử lý cho khách vãng lai (tùy chọn)
+         
             // Ở đây, ta yêu cầu đăng nhập để đơn giản hóa
             return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập để đặt lịch.'], 401);
         }
@@ -109,7 +102,7 @@ class AppointmentController extends Controller
             }
         }
         
-        // TODO: Thêm logic bảo mật cho bác sĩ
+        // logic bảo mật cho bác sĩ
 
         return response()->json([
             'success' => true,
@@ -145,30 +138,47 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Hủy một lịch hẹn. (Bệnh nhân có thể tự hủy lịch của mình).
+     * Hủy một lịch hẹn. 
      */
     public function destroy(Appointment $appointment)
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
 
-        // Bảo mật: Bệnh nhân chỉ được hủy lịch hẹn của chính mình
-        if ($user->role === 'patient') {
-            $patientProfile = Patient::where('user_id', $user->id)->first();
-            if (!$patientProfile || $appointment->patient_id !== $patientProfile->id) {
-                return response()->json(['success' => false, 'message' => 'Không có quyền hủy lịch hẹn này.'], 403);
-            }
+    // Lớp bảo mật 1: Bệnh nhân chỉ được hủy lịch hẹn của chính mình
+    if ($user->role === 'patient') {
+        $patientProfile = Patient::where('user_id', $user->id)->first();
+        if (!$patientProfile || $appointment->patient_id !== $patientProfile->id) {
+            return response()->json(['success' => false, 'message' => 'Không có quyền hủy lịch hẹn này.'], 403);
         }
-        
-        // Thay vì xóa, chúng ta nên cập nhật trạng thái thành 'cancelled'
-        // Đây là cách làm tốt hơn để giữ lại lịch sử
+    }
+
+    // Lớp bảo mật 2: Trạng thái lịch hẹn phải phù hợp để hủy
+    if (!in_array($appointment->status, ['pending', 'confirmed'])) {
+        return response()->json(['success' => false, 'message' => 'Không thể hủy lịch hẹn đã hoàn thành hoặc đã bị hủy trước đó.'], 400);
+    }
+    
+
+    $appointmentTime = Carbon::parse($appointment->appointment_time);
+    $now = Carbon::now();
+
+    // Nếu thời gian còn lại lớn hơn hoặc bằng 24 tiếng
+    if ($now->diffInHours($appointmentTime, false) >= 24) {
         $appointment->status = 'cancelled';
         $appointment->save();
-
-        // Nếu bạn thực sự muốn xóa khỏi database thì dùng: $appointment->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Hủy lịch hẹn thành công!'
         ]);
+    } 
+    // Nếu thời gian còn lại dưới 24 tiếng
+    else {
+        // Hiện tại, chúng ta sẽ trả về lỗi. 
+        // Logic "chờ admin duyệt" sẽ phức tạp hơn và cần một cột mới trong DB (ví dụ: `cancellation_request_status`)
+        return response()->json([
+            'success' => false,
+            'message' => 'Không thể tự hủy lịch hẹn trong vòng 24 giờ trước giờ khám. Vui lòng liên hệ trực tiếp với phòng khám.'
+        ], 400);
     }
+}
 }

@@ -7,5 +7,8 @@
     "devDependencies": {
         "axios": "^1.1.2",
         "lodash": "^4.17.19"
+    },
+    "dependencies": {
+        "react-calendar": "^6.0.0"
     }
 }
