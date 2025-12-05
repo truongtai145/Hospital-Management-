@@ -8,14 +8,17 @@ import {
   Settings
 } from 'lucide-react';
 
-const DoctorSideNav = () => {
+//  component nhận vào prop `handleLogout`
+const DoctorSideNav = ({ handleLogout }) => {
   const location = useLocation();
 
   const menuItems = [
+   
     { name: 'Tổng quan', path: '/doctor-dashboard', icon: LayoutDashboard },
-    {name: 'Hồ sơ cá nhân', path: '/doctor/profile', icon: Settings },
-    { name: 'Thông tin bệnh nhân', path: '/doctor/patients', icon: Users },
+    { name: 'Hồ sơ cá nhân', path: '/doctor/profile', icon: Settings },
+     { name: 'Thông tin bệnh nhân', path: '/doctor/patients', icon: Users },
     { name: 'Lịch hẹn khám', path: '/doctor/appointments', icon: CalendarClock },
+   
   ];
 
   return (
@@ -25,11 +28,12 @@ const DoctorSideNav = () => {
         <h1 className="text-xl font-bold text-primary">DOCTOR <span className="text-secondary">PORTAL</span></h1>
       </div>
 
-      {/* Menu */}
+     
       <nav className="flex-1 py-6 px-3 space-y-1">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          // Logic `isActive` của bạn hoàn toàn chính xác và được giữ nguyên
+          const isActive = location.pathname === item.path; 
           
           return (
             <Link
@@ -50,10 +54,16 @@ const DoctorSideNav = () => {
 
       {/* Footer Menu */}
       <div className="p-4 border-t border-gray-200">
+        {/* Link Cài đặt tài khoản được giữ nguyên */}
         <Link to="/doctor/profile" className="flex items-center gap-3 px-3 py-3 text-gray-600 hover:bg-gray-100 rounded-lg font-medium mb-1">
           <Settings size={20} /> Cài đặt tài khoản
         </Link>
-        <button className="w-full flex items-center gap-3 px-3 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors">
+        
+  
+        <button 
+          onClick={handleLogout} 
+          className="w-full flex items-center gap-3 px-3 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
+        >
           <LogOut size={20} /> Đăng xuất
         </button>
       </div>

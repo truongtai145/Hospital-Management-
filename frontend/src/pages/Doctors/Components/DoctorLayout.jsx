@@ -1,41 +1,57 @@
-import React from 'react';
-import DoctorSideNav from './DoctorSideNav';
-import { Bell, User } from 'lucide-react';
+// src/components/Layout/DoctorLayout.jsx
 
-const DoctorLayout = ({ children }) => {
+import React, { useState, useEffect } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import DoctorSidenav from'./DoctorSideNav';
+import DoctorDashboard from '../DoctorDashboard/DoctorDashboard';
+import { Loader } from 'lucide-react';
+
+const DoctorLayout = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [doctorInfo, setDoctorInfo] = useState(null);
+
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    if (!storedUser || storedUser.role !== 'doctor') {
+      toast.error("Bạn không có quyền truy cập trang này.");
+      navigate('/login');
+    } else {
+      setDoctorInfo(storedUser);
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.clear();
+    toast.success("Đăng xuất thành công!");
+    navigate('/login');
+  };
+  
+  if (!doctorInfo) {
+    return <div className="flex justify-center items-center h-screen"><Loader size={48} className="animate-spin text-primary"/></div>;
+  }
+
   return (
-    <div className="flex bg-gray-50 min-h-screen font-sans">
-      {/* Sidebar */}
-      <DoctorSideNav />
+    <div className="flex bg-slate-50 min-h-screen">
+      {/* Sidenav (Sidebar) */}
+      <DoctorSidenav 
+        doctorName={doctorInfo.profile?.full_name} 
+        handleLogout={handleLogout} 
+      />
 
-      {/* Main Content */}
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
-        
-        {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-end px-8 sticky top-0 z-10">
-          <div className="flex items-center gap-6">
-            {/* Thông báo */}
-            <div className="relative cursor-pointer">
-              <Bell size={22} className="text-gray-500 hover:text-secondary transition" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">2</span>
-            </div>
+      {/* Main Content Area */}
+      <div className="flex-1 ml-64">
+        {/* Header (nếu có, ví dụ: thanh tìm kiếm, thông báo) */}
+        {/* <div className="p-4 bg-white border-b">Header Content</div> */}
 
-            {/* Profile Info */}
-            <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
-              <div className="text-right hidden md:block">
-                <p className="text-sm font-bold text-gray-800">Bs. Nguyễn Văn A</p>
-                <p className="text-xs text-gray-500">Khoa Tim Mạch</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-primary font-bold border-2 border-white shadow-sm">
-                BS
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Nội dung thay đổi */}
-        <main className="p-8 flex-1 overflow-y-auto">
-          {children}
+        <main className="p-8">
+          {/* Render DoctorDashboard mặc định khi ở /doctor-dashboard, hoặc <Outlet /> cho nested routes */}
+          {location.pathname === '/doctor-dashboard' ? (
+            <DoctorDashboard doctorInfo={doctorInfo} />
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>

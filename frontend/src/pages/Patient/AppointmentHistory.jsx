@@ -79,7 +79,7 @@ const AppointmentHistory = () => {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Phần Lịch */}
         <div className="lg:w-1/3">
-           <h2 className="text-2xl font-serif text-primary mb-4">Lịch hẹn của bạn</h2>
+           <h2 className="text-2xl font-serif text-primary mb-4">Lịch hẹn của Tôi</h2>
            <div className="bg-white p-4 rounded-lg shadow-md">
              <Calendar
                 onChange={setCalendarDate}
@@ -96,9 +96,7 @@ const AppointmentHistory = () => {
         {/* Phần Bảng */}
         <div className="lg:w-2/3">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-            <h1 className="text-3xl font-serif text-primary flex items-center gap-2">
-              <Calendar /> Lịch Hẹn Của Tôi
-            </h1>
+            
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
                 <Filter size={16} className="text-gray-500"/>
                 <select 

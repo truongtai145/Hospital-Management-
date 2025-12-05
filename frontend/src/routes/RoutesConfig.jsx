@@ -11,11 +11,15 @@ const AboutPage = lazy(() => import("../pages/About/AboutPage"));
 const ContactPage = lazy(() => import("../pages/Contact/ContactPage"));
 const NewsPage = lazy(() => import("../pages/Blog/BlogPage"));
 const SingleNewsPage = lazy(() => import("../pages/Blog/SingleNewsPage"));
-const PatientProfile =lazy(() =>import("../pages/Patient/PatientProfile"));
-const Appointment =lazy(() =>import("../components/Appointment/Appointment") );
+const PatientProfile = lazy(() => import("../pages/Patient/PatientProfile"));
+const Appointment = lazy(() => import("../components/Appointment/Appointment"));
 const AdminDashboard = lazy(() => import("../pages/Admin/AdminDashboard/AdminDashboard"));
-const DoctorPage = lazy(() => import("../pages/Doctors/DoctorDashboard/DoctorDashboard"));
-const AppointmentHistory = lazy(() =>import("../pages/Patient/AppointmentHistory"));
+const AppointmentHistory = lazy(() => import("../pages/Patient/AppointmentHistory"));
+
+// Doctor pages
+const DoctorLayout = lazy(() => import("../pages/Doctors/Components/DoctorLayout"));
+const DoctorDashboard = lazy(() => import("../pages/Doctors/DoctorDashboard/DoctorDashboard"));
+
 export const ROUTES_CONFIG = [
   // --- AUTH ---
   {
@@ -29,7 +33,7 @@ export const ROUTES_CONFIG = [
     layout: "none",
   },
 
-  // --- PUBLIC PAGES (Layout Header/Footer) ---
+  // --- PUBLIC PAGES ---
   {
     path: PATHS.HOME,
     element: Home,
@@ -66,19 +70,18 @@ export const ROUTES_CONFIG = [
     layout: "public",
   },
   {
-    path:PATHS.PATIENT_PROFILE,
+    path: PATHS.PATIENT_PROFILE,
     element: PatientProfile,
     layout: "public", 
-  isPrivate: true, 
-  roles: ['patient'], 
+    isPrivate: true, 
+    roles: ['patient'], 
   },
   {
     path: PATHS.APPOINTMENT,
     element: Appointment,
-    layout:"public",
+    layout: "public",
   },
-   {
-   
+  {
     path: PATHS.PATIENT_APPOINTMENT_HISTORY,
     element: AppointmentHistory,
     layout: "public",
@@ -86,22 +89,26 @@ export const ROUTES_CONFIG = [
     roles: ['patient'],
   },
 
-  
+  // --- ADMIN ---
   {
     path: PATHS.ADMIN,
     element: AdminDashboard, 
     layout: "none", 
   },
 
+  // --- DOCTOR DASHBOARD (SỬA LẠI) ---
+  {
+    path: PATHS.DOCTOR_DASHBOARD,
+    element: DoctorLayout,  // Layout bọc ngoài
+    layout: "none",
+    isPrivate: true,
+    roles: ['doctor'],
+  },
 
+  // --- 404 ---
   {
     path: PATHS.NOT_FOUND,
     element: () => <div className="text-center mt-20 font-bold text-xl">404 - Trang không tồn tại</div>,
     layout: "public",
-  },
-  {
-    path:PATHS.DOCTOR_DASHBOARD,
-    element: DoctorPage,
-    layout: "none",
   },
 ];

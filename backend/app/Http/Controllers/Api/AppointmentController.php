@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Patient;
 use Carbon\Carbon;
+use App\Models\Doctor;
 class AppointmentController extends Controller
 {
     
@@ -34,6 +35,26 @@ class AppointmentController extends Controller
             'success' => true,
             'data' => $appointments
         ]);
+         if ($user->role === 'doctor') {
+        $doctorProfile = Doctor::where('user_id', $user->id)->first();
+        if ($doctorProfile) {
+            $query->where('doctor_id', $doctorProfile->id);
+        } else {
+            return response()->json(['success' => false, 'data' => []]);
+        }
+    }
+    
+   
+    if ($request->has('date')) {
+        $query->whereDate('appointment_time', $request->date);
+    }
+
+    $appointments = $query->orderBy('appointment_time', 'asc')->get(); // Sắp xếp theo giờ tăng dần
+
+    return response()->json([
+        'success' => true,
+        'data' => $appointments
+    ]);
     }
 
     
@@ -87,9 +108,8 @@ class AppointmentController extends Controller
     }
 
 
-    /**
-     * Xem chi tiết một lịch hẹn.
-     */
+     // Xem chi tiết một lịch hẹn.
+     
     public function show(Appointment $appointment)
     {
         $user = Auth::user();
@@ -110,9 +130,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Cập nhật một lịch hẹn. (Thường dành cho Admin/Bác sĩ để thay đổi trạng thái).
-     */
+    
     public function update(Request $request, Appointment $appointment)
     {
         // Admin có thể cập nhật trạng thái, ghi chú...
@@ -144,7 +162,7 @@ class AppointmentController extends Controller
 {
     $user = Auth::user();
 
-    // Lớp bảo mật 1: Bệnh nhân chỉ được hủy lịch hẹn của chính mình
+    //  Bệnh nhân chỉ được hủy lịch hẹn của chính mình
     if ($user->role === 'patient') {
         $patientProfile = Patient::where('user_id', $user->id)->first();
         if (!$patientProfile || $appointment->patient_id !== $patientProfile->id) {
@@ -152,7 +170,7 @@ class AppointmentController extends Controller
         }
     }
 
-    // Lớp bảo mật 2: Trạng thái lịch hẹn phải phù hợp để hủy
+    //  Trạng thái lịch hẹn phải phù hợp để hủy
     if (!in_array($appointment->status, ['pending', 'confirmed'])) {
         return response()->json(['success' => false, 'message' => 'Không thể hủy lịch hẹn đã hoàn thành hoặc đã bị hủy trước đó.'], 400);
     }
