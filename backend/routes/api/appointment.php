@@ -12,7 +12,9 @@ Route::middleware(['jwt.auth'])->group(function () {
     Route::middleware(['role:patient'])->group(function () {
         // Lấy danh sách lịch hẹn của chính bệnh nhân đó
         Route::get('/patient/appointments', [AppointmentController::class, 'index'])->name('patient.appointments.index');
-        
+        Route::get('/appointments/check-availability', [AppointmentController::class, 'checkAvailability'])->name('appointments.check-availability');
+    
+        Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
         // Hủy một lịch hẹn của chính bệnh nhân đó
         Route::delete('/patient/appointments/{appointment}', [AppointmentController::class, 'destroy'])->name('patient.appointments.destroy');
     });

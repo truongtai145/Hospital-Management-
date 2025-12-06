@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Trash2, Power, Loader, AlertCircle, X } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, Power, Loader, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../Components/AdminLayout';
 import { api } from '../../../api/axios';
@@ -16,7 +16,14 @@ const AdminDoctors = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [stats, setStats] = useState({ total: 0, available: 0, unavailable: 0 });
-  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
+  
+  
+  const [pagination, setPagination] = useState({ 
+    current_page: 1, 
+    last_page: 1, 
+    total: 0,
+    per_page: 3 // 
+  });
 
   const [formData, setFormData] = useState({
     email: '',
@@ -46,7 +53,7 @@ const AdminDoctors = () => {
     try {
       const params = new URLSearchParams({
         page: pagination.current_page,
-        per_page: 15,
+        per_page: pagination.per_page, // 
         ...(searchTerm && { search: searchTerm }),
         ...(filterDepartment !== 'all' && { department_id: filterDepartment }),
         ...(filterAvailable !== 'all' && { is_available: filterAvailable }),
@@ -56,11 +63,12 @@ const AdminDoctors = () => {
       if (response.data.success) {
         const data = response.data.data;
         setDoctors(data.data || []);
-        setPagination({
+        setPagination(prev => ({
+          ...prev,
           current_page: data.current_page,
           last_page: data.last_page,
           total: data.total,
-        });
+        }));
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể tải danh sách bác sĩ');
@@ -200,6 +208,22 @@ const AdminDoctors = () => {
     setSelectedDoctor(null);
   };
 
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= pagination.last_page) {
+      setPagination(prev => ({ ...prev, current_page: page }));
+    }
+  };
+
+  const goToFirstPage = () => goToPage(1);
+  const goToLastPage = () => goToPage(pagination.last_page);
+  const goToPreviousPage = () => goToPage(pagination.current_page - 1);
+  const goToNextPage = () => goToPage(pagination.current_page + 1);
+
+  // Tính toán số item hiển thị
+  const startItem = (pagination.current_page - 1) * pagination.per_page + 1;
+  const endItem = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+
   if (loading && doctors.length === 0) {
     return (
       <AdminLayout>
@@ -218,7 +242,9 @@ const AdminDoctors = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Quản lý bác sĩ</h1>
-            <p className="text-gray-500 text-sm mt-1">Thêm mới và quản lý thông tin bác sĩ</p>
+            <p className="text-gray-500 text-sm mt-1">
+              Hiển thị {startItem}-{endItem} trong tổng số {pagination.total} bác sĩ
+            </p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
@@ -292,31 +318,83 @@ const AdminDoctors = () => {
           </div>
         )}
 
-        {/* Pagination */}
+       
         {pagination.last_page > 1 && (
-          <div className="flex justify-center gap-2">
-            <button
-              onClick={() => setPagination(prev => ({ ...prev, current_page: prev.current_page - 1 }))}
-              disabled={pagination.current_page === 1}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50"
-            >
-              Trước
-            </button>
-            <span className="px-4 py-2">
-              Trang {pagination.current_page} / {pagination.last_page}
-            </span>
-            <button
-              onClick={() => setPagination(prev => ({ ...prev, current_page: prev.current_page + 1 }))}
-              disabled={pagination.current_page === pagination.last_page}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50"
-            >
-              Sau
-            </button>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              {/* Info */}
+              <div className="text-sm text-gray-600">
+                Hiển thị <span className="font-semibold text-gray-900">{startItem}</span> đến 
+                <span className="font-semibold text-gray-900"> {endItem}</span> trong tổng số 
+                <span className="font-semibold text-gray-900"> {pagination.total}</span> bác sĩ
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center gap-2">
+                {/* First */}
+                <button
+                  onClick={goToFirstPage}
+                  disabled={pagination.current_page === 1}
+                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  title="Trang đầu"
+                >
+                  <ChevronLeft size={16} className="inline" />
+                  <ChevronLeft size={16} className="inline -ml-2" />
+                </button>
+
+                {/* Previous */}
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={pagination.current_page === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1"
+                >
+                  <ChevronLeft size={16} />
+                  Trước
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex gap-1">
+                  {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => goToPage(page)}
+                      className={`min-w-[40px] px-3 py-2 rounded-lg font-medium transition ${
+                        page === pagination.current_page
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Next */}
+                <button
+                  onClick={goToNextPage}
+                  disabled={pagination.current_page === pagination.last_page}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1"
+                >
+                  Sau
+                  <ChevronRight size={16} />
+                </button>
+
+                {/* Last */}
+                <button
+                  onClick={goToLastPage}
+                  disabled={pagination.current_page === pagination.last_page}
+                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  title="Trang cuối"
+                >
+                  <ChevronRight size={16} className="inline" />
+                  <ChevronRight size={16} className="inline -ml-2" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Add Modal */}
       {showAddModal && (
         <DoctorFormModal
           title="Thêm bác sĩ mới"
@@ -329,7 +407,6 @@ const AdminDoctors = () => {
         />
       )}
 
-      {/* Edit Modal */}
       {showEditModal && (
         <DoctorFormModal
           title="Chỉnh sửa thông tin bác sĩ"
@@ -345,7 +422,6 @@ const AdminDoctors = () => {
   );
 };
 
-// Doctor Card Component
 const DoctorCard = ({ doctor, onEdit, onDelete, onToggleAvailability }) => (
   <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition overflow-hidden">
     <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
@@ -427,7 +503,7 @@ const DoctorCard = ({ doctor, onEdit, onDelete, onToggleAvailability }) => (
   </div>
 );
 
-// Form Modal Component
+
 const DoctorFormModal = ({ title, formData, departments, onChange, onSubmit, onClose, isEdit }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -629,6 +705,7 @@ const DoctorFormModal = ({ title, formData, departments, onChange, onSubmit, onC
     </div>
   </div>
 );
+
 
 const StatCard = ({ label, value, color }) => {
   const colors = {

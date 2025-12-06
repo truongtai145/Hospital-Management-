@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Search, Filter, User, Phone, FileText, Loader, AlertCircle, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Clock, Search, Filter, Phone, FileText, Loader, AlertCircle, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from "../../../api/axios";
 import { toast } from 'react-toastify';
 
-// Status Badge Component
+// --- Component hiển thị trạng thái ---
 const StatusBadge = ({ status }) => {
   const styles = {
     pending: "bg-yellow-100 text-yellow-700 border border-yellow-300",
@@ -34,9 +34,13 @@ const DoctorAppointments = () => {
   const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Filter & search
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
+
+  // Stats
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -45,35 +49,32 @@ const DoctorAppointments = () => {
     cancelled: 0,
   });
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // --- Fetch danh sách lịch hẹn ---
   useEffect(() => {
     fetchAppointments();
   }, []);
 
-  useEffect(() => {
-    filterAppointments();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, filterStatus, filterDate, appointments]);
-
   const fetchAppointments = async () => {
     setLoading(true);
     setError(null);
-    
     try {
       const response = await api.get('/doctor/appointments');
-      
       if (response.data.success) {
         const appts = response.data.data || [];
         setAppointments(appts);
-        
-        // Calculate stats
-        const newStats = {
+
+        // Thống kê
+        setStats({
           total: appts.length,
           pending: appts.filter(a => a.status === 'pending').length,
           confirmed: appts.filter(a => a.status === 'confirmed').length,
           completed: appts.filter(a => a.status === 'completed').length,
           cancelled: appts.filter(a => a.status === 'cancelled').length,
-        };
-        setStats(newStats);
+        });
       }
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Không thể tải danh sách lịch hẹn";
@@ -84,31 +85,38 @@ const DoctorAppointments = () => {
     }
   };
 
+  // --- Filter và search ---
+  useEffect(() => {
+    filterAppointments();
+    setCurrentPage(1); // reset về trang 1 khi thay đổi bộ lọc
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, filterStatus, filterDate, appointments]);
+
   const filterAppointments = () => {
     let filtered = [...appointments];
-    
-    // Filter by search term
+
+    // Search theo tên bệnh nhân, số điện thoại hoặc lý do khám
     if (searchTerm) {
-      filtered = filtered.filter(apt => 
+      filtered = filtered.filter(apt =>
         apt.patient?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         apt.patient?.phone?.includes(searchTerm) ||
         apt.reason?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
-    // Filter by status
+
+    // Filter theo trạng thái
     if (filterStatus !== 'all') {
       filtered = filtered.filter(apt => apt.status === filterStatus);
     }
-    
-    // Filter by date
+
+    // Filter theo ngày
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
+    today.setHours(0,0,0,0);
+
     if (filterDate === 'today') {
       filtered = filtered.filter(apt => {
         const aptDate = new Date(apt.appointment_time);
-        aptDate.setHours(0, 0, 0, 0);
+        aptDate.setHours(0,0,0,0);
         return aptDate.getTime() === today.getTime();
       });
     } else if (filterDate === 'upcoming') {
@@ -116,27 +124,32 @@ const DoctorAppointments = () => {
     } else if (filterDate === 'past') {
       filtered = filtered.filter(apt => new Date(apt.appointment_time) < today);
     }
-    
-    // Sort by appointment time (descending)
-    filtered.sort((a, b) => new Date(b.appointment_time) - new Date(a.appointment_time));
-    
+
+    // Sort theo thời gian appointment giảm dần
+    filtered.sort((a,b) => new Date(b.appointment_time) - new Date(a.appointment_time));
+
     setFilteredAppointments(filtered);
   };
 
+  // --- Cập nhật trạng thái ---
   const handleUpdateStatus = async (appointmentId, newStatus) => {
     try {
-      const response = await api.put(`/appointments/${appointmentId}`, {
-        status: newStatus
-      });
-      
+      const response = await api.put(`/appointments/${appointmentId}`, { status: newStatus });
       if (response.data.success) {
-        toast.success('Cập nhật trạng thái thành công!');
-        fetchAppointments(); // Refresh list
+        toast.success("Cập nhật trạng thái thành công!");
+        fetchAppointments();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Không thể cập nhật trạng thái');
+      toast.error(error.response?.data?.message || "Không thể cập nhật trạng thái");
     }
   };
+
+  // --- Paginated data ---
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+  const paginatedAppointments = filteredAppointments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (loading) {
     return (
@@ -167,17 +180,14 @@ const DoctorAppointments = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* --- Header & Stats --- */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-              <Calendar className="text-blue-600" size={28} />
-              Quản lý lịch hẹn
+              <Calendar className="text-blue-600" size={28} /> Quản lý lịch hẹn
             </h2>
-            <p className="text-gray-500">
-              Xem và quản lý tất cả lịch hẹn của bạn
-            </p>
+            <p className="text-gray-500">Xem và quản lý tất cả lịch hẹn của bạn</p>
           </div>
         </div>
       </div>
@@ -211,9 +221,7 @@ const DoctorAppointments = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tìm kiếm
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -229,8 +237,7 @@ const DoctorAppointments = () => {
           {/* Status Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 items-center gap-2">
-              <Filter size={16} />
-              Trạng thái
+              <Filter size={16} /> Trạng thái
             </label>
             <select
               value={filterStatus}
@@ -248,8 +255,7 @@ const DoctorAppointments = () => {
           {/* Date Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2 items-center gap-2">
-              <Calendar size={16} />
-              Thời gian
+              <Calendar size={16} /> Thời gian
             </label>
             <select
               value={filterDate}
@@ -266,7 +272,7 @@ const DoctorAppointments = () => {
       </div>
 
       {/* Appointments List */}
-      {filteredAppointments.length > 0 ? (
+      {paginatedAppointments.length > 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[900px]">
@@ -281,29 +287,24 @@ const DoctorAppointments = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredAppointments.map((apt) => (
+                {paginatedAppointments.map((apt) => (
                   <tr key={apt.id} className="hover:bg-blue-50/30 transition-colors">
+                    {/* Ngày & Giờ */}
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <Calendar size={18} className="text-gray-400" />
                         <div>
                           <p className="font-medium text-gray-800">
-                            {new Date(apt.appointment_time).toLocaleDateString('vi-VN', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric'
-                            })}
+                            {new Date(apt.appointment_time).toLocaleDateString('vi-VN')}
                           </p>
                           <p className="text-sm text-gray-500 flex items-center gap-1">
-                            <Clock size={14} />
-                            {new Date(apt.appointment_time).toLocaleTimeString('vi-VN', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            <Clock size={14} /> {new Date(apt.appointment_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </div>
                     </td>
+
+                    {/* Bệnh nhân */}
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
@@ -315,65 +316,104 @@ const DoctorAppointments = () => {
                         </div>
                       </div>
                     </td>
+
+                    {/* Liên hệ */}
                     <td className="p-4">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Phone size={16} className="text-gray-400" />
                         <span>{apt.patient?.phone || 'N/A'}</span>
                       </div>
                     </td>
+
+                    {/* Lý do */}
                     <td className="p-4">
                       <div className="flex items-start gap-2 max-w-xs">
                         <FileText size={16} className="text-gray-400 mt-0.5" />
                         <p className="text-sm text-gray-600 line-clamp-2">{apt.reason}</p>
                       </div>
                     </td>
+
+                    {/* Trạng thái */}
                     <td className="p-4 text-center">
                       <StatusBadge status={apt.status} />
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        {apt.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleUpdateStatus(apt.id, 'confirmed')}
-                              className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
-                              title="Xác nhận"
-                            >
-                              <CheckCircle size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(apt.id, 'cancelled')}
-                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                              title="Hủy"
-                            >
-                              <XCircle size={18} />
-                            </button>
-                          </>
-                        )}
-                        <Link
-                          to={`/doctor-dashboard/appointments/${apt.id}`}
-                          className="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                        >
-                          Chi tiết
-                          <ChevronRight size={16} />
-                        </Link>
-                      </div>
-                    </td>
+
+                    
+               {/* Hành động */}
+<td className="p-4">
+  <div className="flex items-center gap-2">
+    {apt.status === 'pending' && (
+      <>
+        <button
+          onClick={() => handleUpdateStatus(apt.id, 'confirmed')}
+          className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+          title="Xác nhận"
+        >
+          <CheckCircle size={18} />
+        </button>
+        <button
+          onClick={() => handleUpdateStatus(apt.id, 'cancelled')}
+          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+          title="Hủy"
+        >
+          <XCircle size={18} />
+        </button>
+      </>
+    )}
+    
+    <Link
+      to={`/doctor-dashboard/appointments/${apt.id}`}
+      className={`flex items-center gap-1 px-3 py-2 rounded-lg transition-colors text-sm ${
+        ['completed', 'cancelled'].includes(apt.status)
+          ? 'bg-gray-600 text-white hover:bg-gray-700'
+          : 'bg-blue-600 text-white hover:bg-blue-700'
+      }`}
+    >
+      {['completed', 'cancelled'].includes(apt.status) ? 'Xem ' : 'Khám'}
+      <ChevronRight size={16} />
+    </Link>
+  </div>
+</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* --- Pagination --- */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 p-4">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Trước
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-1 rounded border ${currentPage === page ? 'bg-blue-600 text-white' : 'border-gray-300 hover:bg-gray-100'}`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Tiếp
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <Calendar className="mx-auto mb-3 text-gray-300" size={64} />
-          <p className="text-gray-500 font-medium text-lg">
-            Không tìm thấy lịch hẹn nào
-          </p>
-          <p className="text-sm text-gray-400 mt-1">
-            Thử thay đổi bộ lọc hoặc tìm kiếm
-          </p>
+          <p className="text-gray-500 font-medium text-lg">Không tìm thấy lịch hẹn nào</p>
+          <p className="text-sm text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc tìm kiếm</p>
         </div>
       )}
     </div>

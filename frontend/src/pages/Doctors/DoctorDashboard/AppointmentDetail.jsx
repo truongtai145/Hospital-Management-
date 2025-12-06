@@ -75,6 +75,51 @@ const AppointmentDetail = () => {
     }
   };
 
+  // Hàm kiểm tra trạng thái có được phép thay đổi không
+  const getAvailableStatuses = (currentStatus) => {
+    switch (currentStatus) {
+      case 'pending':
+        // Chờ xác nhận -> Có thể chuyển thành: Đã xác nhận, Đã hủy
+        return [
+          { value: 'pending', label: 'Chờ xác nhận' },
+          { value: 'confirmed', label: 'Đã xác nhận' },
+          { value: 'cancelled', label: 'Đã hủy' }
+        ];
+      
+      case 'confirmed':
+        // Đã xác nhận -> Có thể chuyển thành: Đã hoàn thành, Vắng mặt, Đã hủy
+        // KHÔNG được quay lại Chờ xác nhận
+        return [
+          { value: 'confirmed', label: 'Đã xác nhận' },
+          { value: 'completed', label: 'Đã hoàn thành' },
+          { value: 'no_show', label: 'Vắng mặt' },
+          { value: 'cancelled', label: 'Đã hủy' }
+        ];
+      
+      case 'completed':
+      case 'no_show':
+      case 'cancelled':
+        // Các trạng thái này là FINAL - không được thay đổi
+        return [
+          { value: currentStatus, label: currentStatus === 'completed' ? 'Đã hoàn thành' : currentStatus === 'no_show' ? 'Vắng mặt' : 'Đã hủy' }
+        ];
+      
+      default:
+        return [
+          { value: 'pending', label: 'Chờ xác nhận' },
+          { value: 'confirmed', label: 'Đã xác nhận' },
+          { value: 'completed', label: 'Đã hoàn thành' },
+          { value: 'cancelled', label: 'Đã hủy' },
+          { value: 'no_show', label: 'Vắng mặt' }
+        ];
+    }
+  };
+
+  // Kiểm tra xem trạng thái có bị khóa không
+  const isStatusLocked = (status) => {
+    return ['completed', 'no_show', 'cancelled'].includes(status);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -85,6 +130,19 @@ const AppointmentDetail = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Kiểm tra nếu trạng thái bị khóa
+    if (isStatusLocked(appointment.status)) {
+      toast.warning('Không thể cập nhật lịch hẹn đã hoàn thành, đã hủy hoặc vắng mặt!');
+      return;
+    }
+
+    // Kiểm tra nếu đổi sang completed hoặc no_show mà chưa có ghi chú
+    if (['completed', 'no_show'].includes(formData.status) && !formData.doctor_notes.trim()) {
+      toast.warning('Vui lòng nhập chuẩn đoán trước khi hoàn thành lịch hẹn!');
+      return;
+    }
+
     setSaving(true);
     
     try {
@@ -93,6 +151,11 @@ const AppointmentDetail = () => {
       if (response.data.success) {
         setAppointment(response.data.data);
         toast.success('Cập nhật thông tin thành công!');
+        
+        // Nếu chuyển sang trạng thái final, reload để cập nhật UI
+        if (['completed', 'no_show', 'cancelled'].includes(formData.status)) {
+          fetchAppointmentDetail();
+        }
       }
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Không thể cập nhật thông tin";
@@ -103,6 +166,12 @@ const AppointmentDetail = () => {
   };
 
   const handleQuickStatusUpdate = async (newStatus) => {
+    // Kiểm tra nếu trạng thái bị khóa
+    if (isStatusLocked(appointment.status)) {
+      toast.warning('Không thể thay đổi trạng thái của lịch hẹn này!');
+      return;
+    }
+
     setSaving(true);
     try {
       const response = await api.put(`/appointments/${id}`, {
@@ -113,6 +182,11 @@ const AppointmentDetail = () => {
         setAppointment(response.data.data);
         setFormData(prev => ({ ...prev, status: newStatus }));
         toast.success('Cập nhật trạng thái thành công!');
+        
+        // Reload nếu chuyển sang cancelled
+        if (newStatus === 'cancelled') {
+          fetchAppointmentDetail();
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể cập nhật trạng thái');
@@ -149,6 +223,8 @@ const AppointmentDetail = () => {
   }
 
   const patient = appointment.patient;
+  const availableStatuses = getAvailableStatuses(appointment.status);
+  const statusLocked = isStatusLocked(appointment.status);
 
   return (
     <div className="space-y-6">
@@ -185,9 +261,22 @@ const AppointmentDetail = () => {
             </p>
           </div>
         </div>
+        
+        {/* Cảnh báo nếu trạng thái đã khóa */}
+        {statusLocked && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Lịch hẹn đã được hoàn tất</p>
+              <p className="text-sm text-amber-700 mt-1">
+                Trạng thái này không thể thay đổi. Bạn chỉ có thể xem thông tin.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Chỉ hiện khi status = pending */}
       {appointment.status === 'pending' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-800 mb-4">Hành động nhanh</h3>
@@ -273,31 +362,31 @@ const AppointmentDetail = () => {
             </h3>
             
             <div className="space-y-4">
-              {patient?.allergies && (
+              {appointment.allergies_at_appointment && (
                 <div>
                   <p className="text-sm text-gray-500 mb-1 flex items-center gap-2">
                     <AlertCircle size={14} />
-                    Dị ứng
+                    Dị ứng (tại thời điểm đặt)
                   </p>
                   <p className="text-sm text-gray-800 bg-red-50 p-3 rounded-lg border border-red-200">
-                    {patient.allergies}
+                    {appointment.allergies_at_appointment}
                   </p>
                 </div>
               )}
               
-              {patient?.medical_history && (
+              {appointment.medical_history_at_appointment && (
                 <div>
                   <p className="text-sm text-gray-500 mb-1 flex items-center gap-2">
                     <FileText size={14} />
-                    Tiền sử bệnh
+                    Tiền sử bệnh (tại thời điểm đặt)
                   </p>
                   <p className="text-sm text-gray-800 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    {patient.medical_history}
+                    {appointment.medical_history_at_appointment}
                   </p>
                 </div>
               )}
               
-              {!patient?.allergies && !patient?.medical_history && (
+              {!appointment.allergies_at_appointment && !appointment.medical_history_at_appointment && (
                 <p className="text-sm text-gray-400 text-center py-4">
                   Chưa có thông tin y tế
                 </p>
@@ -362,30 +451,11 @@ const AppointmentDetail = () => {
             </h3>
             
             <div className="space-y-4">
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trạng thái lịch hẹn
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="pending">Chờ xác nhận</option>
-                  <option value="confirmed">Đã xác nhận</option>
-                  <option value="completed">Đã hoàn thành</option>
-                  <option value="cancelled">Đã hủy</option>
-                  <option value="no_show">Vắng mặt</option>
-                </select>
-              </div>
-
               {/* Doctor Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 items-center gap-2">
                   <FileText size={16} />
-                  Ghi chú của bác sĩ
+                  Chuẩn Đoán {!statusLocked && <span className="text-red-500">*</span>}
                 </label>
                 <textarea
                   name="doctor_notes"
@@ -393,7 +463,9 @@ const AppointmentDetail = () => {
                   onChange={handleChange}
                   rows="6"
                   placeholder="Ghi chú về tình trạng bệnh nhân, chẩn đoán, các xét nghiệm cần thiết..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={statusLocked}
+                  required={!statusLocked}
                 />
               </div>
 
@@ -409,20 +481,54 @@ const AppointmentDetail = () => {
                   onChange={handleChange}
                   rows="6"
                   placeholder="Tên thuốc, liều lượng, cách dùng, thời gian sử dụng..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={statusLocked}
                 />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Trạng thái lịch hẹn
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={statusLocked}
+                >
+                  {availableStatuses.map(status => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* Hiển thị gợi ý về quy tắc chuyển trạng thái */}
+                {!statusLocked && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    {appointment.status === 'pending' && '💡 Xác nhận lịch trước khi khám bệnh'}
+                    {appointment.status === 'confirmed' && '💡 Sau khi khám xong, chọn "Đã hoàn thành" hoặc "Vắng mặt" nếu bệnh nhân không đến'}
+                  </p>
+                )}
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || statusLocked}
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? (
                   <>
                     <Loader size={20} className="animate-spin" />
                     Đang lưu...
+                  </>
+                ) : statusLocked ? (
+                  <>
+                    <AlertCircle size={20} />
+                    Không thể cập nhật
                   </>
                 ) : (
                   <>

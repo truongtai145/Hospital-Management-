@@ -205,5 +205,82 @@ class AppointmentController extends Controller
             'message' => 'Không thể tự hủy lịch hẹn trong vòng 24 giờ trước giờ khám. Vui lòng liên hệ trực tiếp với phòng khám.'
         ], 400);
     }
+    
+}
+public function checkAvailability(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'doctor_id' => 'required|exists:doctors,id',
+        'date' => 'required|date|after_or_equal:today',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+    }
+
+    $doctorId = $request->doctor_id;
+    $date = Carbon::parse($request->date)->startOfDay();
+
+    /*Kiểm tra nếu là Chủ Nhật
+    if ($date->isSunday()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Phòng khám không làm việc vào Chủ Nhật.',
+            'data' => []
+        ]);
+    }
+        */
+
+    // Lấy tất cả lịch hẹn đã đặt (bao gồm cả pending, confirmed)
+    $bookedAppointments = Appointment::where('doctor_id', $doctorId)
+        ->whereDate('appointment_time', $date)
+        ->whereIn('status', ['pending', 'confirmed']) // Chỉ lấy lịch chưa hủy
+        ->get()
+        ->pluck('appointment_time')
+        ->map(function($time) {
+            return Carbon::parse($time)->format('H:i');
+        })
+        ->toArray();
+
+    // Tạo danh sách các khung giờ làm việc
+    $timeSlots = [];
+    
+    // Ca sáng: 8:00 - 11:00
+    for ($hour = 8; $hour < 11; $hour++) {
+        for ($minute = 0; $minute < 60; $minute += 30) {
+            $timeSlots[] = sprintf('%02d:%02d', $hour, $minute);
+        }
+    }
+    
+    // Ca chiều: 13:00 - 20:00
+    for ($hour = 13; $hour < 20; $hour++) {
+        for ($minute = 0; $minute < 60; $minute += 30) {
+            $timeSlots[] = sprintf('%02d:%02d', $hour, $minute);
+        }
+    }
+
+    // Lọc ra các khung giờ còn trống
+    $availableSlots = array_values(array_diff($timeSlots, $bookedAppointments));
+
+    // Lọc các khung giờ đã qua (nếu là ngày hôm nay)
+    if ($date->isToday()) {
+        $now = Carbon::now();
+        $availableSlots = array_filter($availableSlots, function($slot) use ($now, $date) {
+            $slotTime = Carbon::parse($date->format('Y-m-d') . ' ' . $slot);
+            return $slotTime->greaterThan($now);
+        });
+        $availableSlots = array_values($availableSlots);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'date' => $date->format('Y-m-d'),
+            'doctor_id' => $doctorId,
+            'available_slots' => $availableSlots,
+            'booked_slots' => $bookedAppointments,
+            'total_available' => count($availableSlots)
+        ]
+    ]);
 }
 }

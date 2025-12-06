@@ -1,14 +1,13 @@
-// Redesigned Appointment Form Component
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/axios';
 import { toast } from 'react-toastify';
 import { 
   Loader, Heart, Droplet, Send, User, Phone, Calendar, 
-  Stethoscope, MessageSquare, CheckCircle, FileText, Hash 
+  Stethoscope, MessageSquare, CheckCircle, FileText, Hash,
+  Clock, AlertCircle, X
 } from 'lucide-react';
 import Modal from '../modal/Modal';
 
-// Input Component
 const FormInput = ({ icon, label, name, value, onChange, type = 'text', ...props }) => (
   <div className="relative w-full">
     <input 
@@ -27,7 +26,6 @@ const FormInput = ({ icon, label, name, value, onChange, type = 'text', ...props
   </div>
 );
 
-// Textarea Component
 const FormTextarea = ({ icon, label, name, value, onChange, ...props }) => (
   <div className="relative w-full">
     <textarea 
@@ -45,7 +43,6 @@ const FormTextarea = ({ icon, label, name, value, onChange, ...props }) => (
   </div>
 );
 
-// Info Item Component
 const InfoItem = ({ icon, title, value }) => (
   <div className="flex gap-3 py-3 border-b border-gray-100 last:border-none">
     <div className="text-primary/80">{icon}</div>
@@ -58,10 +55,29 @@ const InfoItem = ({ icon, title, value }) => (
   </div>
 );
 
+const TimeSlotButton = ({ time, isSelected, onClick, disabled }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className={`
+      px-4 py-3 rounded-lg font-medium transition-all duration-200
+      ${isSelected 
+        ? 'bg-white text-primary ring-2 ring-white shadow-lg' 
+        : 'bg-white/10 text-white hover:bg-white/20 border border-white/30'
+      }
+      ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+    `}
+  >
+    <Clock size={16} className="inline mr-2" />
+    {time}
+  </button>
+);
+
 const Appointment = () => {
   const initialFormState = {
     full_name: '', email: '', phone: '', gender: 'male',
-    department_id: '', doctor_id: '', appointment_time: '', reason: '',
+    department_id: '', doctor_id: '', appointment_date: '', appointment_time: '', reason: '',
     allergies_at_appointment: '', medical_history_at_appointment: '',
   };
 
@@ -69,28 +85,34 @@ const Appointment = () => {
   const [departments, setDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  // eslint-disable-next-line no-unused-vars
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isCheckingSlots, setIsCheckingSlots] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState(null);
 
+  // Load thông tin user và dữ liệu ban đầu
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setFormData(prev => ({
-        ...prev,
-        full_name: storedUser.profile?.full_name || '',
-        email: storedUser.email || '',
-        phone: storedUser.profile?.phone || '',
-        gender: storedUser.profile?.gender || 'male',
-        allergies_at_appointment: storedUser.profile?.allergies || '',
-        medical_history_at_appointment: storedUser.profile?.medical_history || '',
-      }));
+      try {
+        const user = JSON.parse(storedUser);
+        setFormData(prev => ({
+          ...prev,
+          full_name: user.profile?.full_name || '',
+          email: user.email || '',
+          phone: user.profile?.phone || '',
+          gender: user.profile?.gender || 'male',
+          allergies_at_appointment: user.profile?.allergies || '',
+          medical_history_at_appointment: user.profile?.medical_history || '',
+        }));
+      // eslint-disable-next-line no-unused-vars
+      } catch (e) {
+        console.error('Error parsing user data');
+      }
     }
 
     const fetchData = async () => {
-      setIsDataLoading(true);
       try {
         const [deptRes, docRes] = await Promise.all([
           api.get('/departments'),
@@ -101,62 +123,131 @@ const Appointment = () => {
       // eslint-disable-next-line no-unused-vars
       } catch (error) {
         toast.error('Không thể tải danh sách khoa hoặc bác sĩ.');
-      } finally {
-        setIsDataLoading(false);
       }
     };
     fetchData();
   }, []);
 
+  // Lọc bác sĩ theo khoa
   useEffect(() => {
     if (formData.department_id) {
       setFilteredDoctors(doctors.filter(d => d.department_id.toString() === formData.department_id));
     } else {
       setFilteredDoctors([]);
     }
-    setFormData(prev => ({ ...prev, doctor_id: '' }));
+    setFormData(prev => ({ ...prev, doctor_id: '', appointment_date: '', appointment_time: '' }));
+    setAvailableSlots([]);
   }, [formData.department_id, doctors]);
 
-  const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  // Kiểm tra lịch trống khi chọn bác sĩ và ngày
+  useEffect(() => {
+    if (formData.doctor_id && formData.appointment_date) {
+      checkAvailability();
+    } else {
+      setAvailableSlots([]);
+      setFormData(prev => ({ ...prev, appointment_time: '' }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.doctor_id, formData.appointment_date]);
 
-  const validateAppointmentTime = () => {
-    if (!formData.appointment_time)
-      return { valid: false, message: 'Vui lòng chọn ngày giờ khám.' };
+  const checkAvailability = async () => {
+    setIsCheckingSlots(true);
+    setFormData(prev => ({ ...prev, appointment_time: '' }));
+    
+    try {
+      const response = await api.get(
+        `/appointments/check-availability?doctor_id=${formData.doctor_id}&date=${formData.appointment_date}`
+      );
+      
+      if (response.data.success) {
+        const slots = response.data.data.available_slots || [];
+        setAvailableSlots(slots);
+        
+        if (slots.length === 0) {
+          toast.warning('Bác sĩ đã kín lịch trong ngày này. Vui lòng chọn ngày khác.');
+        }
+      } else {
+        setAvailableSlots([]);
+        toast.error(response.data.message || 'Không thể kiểm tra lịch trống.');
+      }
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      toast.error('Lỗi khi kiểm tra lịch trống.');
+      setAvailableSlots([]);
+    } finally {
+      setIsCheckingSlots(false);
+    }
+  };
 
-    const selected = new Date(formData.appointment_time);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-    if (selected < new Date())
-      return { valid: false, message: 'Không thể chọn thời gian trong quá khứ.' };
-    if (selected.getDay() === 0)
+  const handleTimeSlotSelect = (time) => {
+    setFormData(prev => ({ ...prev, appointment_time: time }));
+  };
+
+  const getMinDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
+  const validateForm = () => {
+    if (!formData.appointment_time) {
+      return { valid: false, message: 'Vui lòng chọn khung giờ khám.' };
+    }
+
+    // Kiểm tra ngày không phải chủ nhật
+    /*const selectedDate = new Date(formData.appointment_date);
+    if (selectedDate.getDay() === 0) {
       return { valid: false, message: 'Phòng khám không làm việc vào Chủ Nhật.' };
-    if (selected.getHours() < 8 || selected.getHours() >= 20)
-      return { valid: false, message: 'Giờ khám hợp lệ: 08:00 - 20:00.' };
+    }*/
 
     return { valid: true };
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const check = validateAppointmentTime();
-    if (!check.valid) return toast.error(check.message);
+    
+    const validation = validateForm();
+    if (!validation.valid) {
+      toast.error(validation.message);
+      return;
+    }
+
+    // Tạo datetime từ date và time
+    const appointmentDateTime = `${formData.appointment_date} ${formData.appointment_time}:00`;
 
     setIsLoading(true);
     try {
-      const res = await api.post('/appointments', formData);
+      const submitData = {
+        ...formData,
+        appointment_time: appointmentDateTime
+      };
+      delete submitData.appointment_date; // Xóa field tạm thời
+
+      const res = await api.post('/appointments', submitData);
+      
       if (res.data.success) {
         const detail = {
           ...formData,
           ...res.data.data,
           doctor_name: doctors.find(d => d.id === parseInt(formData.doctor_id))?.full_name,
           department_name: departments.find(d => d.id === parseInt(formData.department_id))?.name,
+          appointment_time: appointmentDateTime
         };
         setAppointmentDetails(detail);
         setIsModalOpen(true);
         setFormData(initialFormState);
+        setAvailableSlots([]);
+      } else {
+        toast.error(res.data.message || 'Đặt lịch thất bại.');
       }
-    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      toast.error('Đặt lịch thất bại.');
+      const errorMsg = err.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại.';
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -171,12 +262,26 @@ const Appointment = () => {
             <div className="lg:w-2/5 p-10 flex flex-col justify-center">
               <p className="font-bold text-lg uppercase tracking-widest text-secondary mb-4">Đặt lịch khám</p>
               <h2 className="text-4xl font-serif text-primary mb-6">Đặt lịch hẹn</h2>
-              <p className="text-gray-600">Chỉ vài phút để chủ động chăm sóc sức khỏe của bạn.</p>
+              <p className="text-gray-600 mb-4">Chỉ vài phút để chủ động chăm sóc sức khỏe của bạn.</p>
+              
+              <div className="bg-blue-50 border-l-4 border-primary p-4 rounded mt-4">
+                <h4 className="font-semibold text-primary mb-2 flex items-center">
+                  <Clock size={18} className="mr-2" />
+                  Giờ làm việc
+                </h4>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li>• <strong>Ca sáng:</strong> 8:00 - 11:00</li>
+                  <li>• <strong>Nghỉ trưa:</strong> 11:00 - 13:00</li>
+                  <li>• <strong>Ca chiều:</strong> 13:00 - 20:00</li>
+                  <li>• <strong>Thời gian khám:</strong> 30 phút/ca</li>
+                 { /* <li className="text-red-600 font-medium">• Nghỉ Chủ Nhật</li> */}
+                </ul>
+              </div>
             </div>
 
             <div className="lg:w-3/5 bg-primary p-10">
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/* GRID */}
+                {/* GRID - Thông tin cơ bản */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormInput icon={<User />} label="Họ và tên *" name="full_name" value={formData.full_name} onChange={handleChange} required />
                   <select name="gender" value={formData.gender} onChange={handleChange} required className="appointment-select pt-6">
@@ -186,6 +291,10 @@ const Appointment = () => {
                   </select>
                   <FormInput icon={<User />} label="Email *" name="email" type="email" value={formData.email} onChange={handleChange} required />
                   <FormInput icon={<Phone />} label="Số điện thoại *" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+                </div>
+
+                {/* Chọn khoa và bác sĩ */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <select name="department_id" value={formData.department_id} onChange={handleChange} required className="appointment-select pt-6">
                     <option value="">-- Chọn khoa * --</option>
                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -196,17 +305,61 @@ const Appointment = () => {
                   </select>
                 </div>
 
-                <FormInput icon={<Calendar />} label="Ngày giờ khám *" name="appointment_time" type="datetime-local" value={formData.appointment_time} onChange={handleChange} required />
+                {/* Chọn ngày */}
+                <FormInput 
+                  icon={<Calendar />} 
+                  label="Chọn ngày khám *" 
+                  name="appointment_date" 
+                  type="date" 
+                  value={formData.appointment_date} 
+                  onChange={handleChange} 
+                  min={getMinDate()}
+                  disabled={!formData.doctor_id}
+                  required 
+                />
 
-                <FormTextarea icon={<MessageSquare />} label="Lý do khám *" name="reason" value={formData.reason} onChange={handleChange} rows="3" maxLength={100} required />
+                {/* Hiển thị khung giờ trống */}
+                {formData.appointment_date && formData.doctor_id && (
+                  <div className="space-y-3">
+                    <label className="text-white font-semibold flex items-center gap-2">
+                      <Clock size={18} />
+                      Chọn khung giờ khám *
+                    </label>
+                    
+                    {isCheckingSlots ? (
+                      <div className="flex justify-center items-center py-8">
+                        <Loader className="animate-spin text-white" size={32} />
+                        <span className="ml-3 text-white">Đang kiểm tra lịch trống...</span>
+                      </div>
+                    ) : availableSlots.length > 0 ? (
+                      <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-2 bg-white/5 rounded-lg">
+                        {availableSlots.map((slot) => (
+                          <TimeSlotButton
+                            key={slot}
+                            time={slot}
+                            isSelected={formData.appointment_time === slot}
+                            onClick={() => handleTimeSlotSelect(slot)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-white">
+                        <AlertCircle size={24} />
+                        <span>Không có khung giờ trống. Vui lòng chọn ngày khác.</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <FormTextarea icon={<MessageSquare />} label="Lý do khám *" name="reason" value={formData.reason} onChange={handleChange} rows="3" maxLength={500} required />
 
                 <div className="pt-4 border-t border-white/20 space-y-6">
                   <h4 className="text-white font-semibold text-lg">Thông tin y tế bổ sung</h4>
-                  <FormTextarea icon={<Droplet />} label="Tiền sử dị ứng" name="allergies_at_appointment" value={formData.allergies_at_appointment} onChange={handleChange} rows="2" maxLength={50} />
-                  <FormTextarea icon={<Heart />} label="Tiền sử bệnh án" name="medical_history_at_appointment" value={formData.medical_history_at_appointment} onChange={handleChange} rows="2" maxLength={50} />
+                  <FormTextarea icon={<Droplet />} label="Tiền sử dị ứng" name="allergies_at_appointment" value={formData.allergies_at_appointment} onChange={handleChange} rows="2" maxLength={500} />
+                  <FormTextarea icon={<Heart />} label="Tiền sử bệnh án" name="medical_history_at_appointment" value={formData.medical_history_at_appointment} onChange={handleChange} rows="2" maxLength={500} />
                 </div>
 
-                <button type="submit" disabled={isLoading} className="w-full bg-slate-100 text-primary font-bold py-4 rounded-lg hover:bg-white transition flex items-center justify-center gap-3 text-lg">
+                <button type="submit" disabled={isLoading || !formData.appointment_time} className="w-full bg-slate-100 text-primary font-bold py-4 rounded-lg hover:bg-white transition flex items-center justify-center gap-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                   {isLoading ? <Loader className="animate-spin" /> : <>Gửi đi <Send size={20} /></>}
                 </button>
               </form>
@@ -225,14 +378,22 @@ const Appointment = () => {
 
             <div className="text-center">
               <CheckCircle className="mx-auto text-green-500 mb-3" size={48} />
-              <p className="text-gray-600">Lịch hẹn đã được ghi nhận và đang chờ xác nhận.</p>
+              <p className="text-gray-600 mb-2">Lịch hẹn đã được ghi nhận và đang chờ xác nhận từ bác sĩ hoặc admin.</p>
+              <p className="text-sm text-gray-500">Bạn sẽ nhận được thông báo khi lịch hẹn được xác nhận.</p>
             </div>
 
             <div className="bg-slate-50 rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto">
               <div className="space-y-3">
                 <InfoItem icon={<User />} title="Bệnh nhân" value={appointmentDetails.full_name} />
                 <InfoItem icon={<Phone />} title="Số điện thoại" value={appointmentDetails.phone} />
-                <InfoItem icon={<Calendar />} title="Thời gian" value={new Date(appointmentDetails.appointment_time).toLocaleString('vi-VN')} />
+                <InfoItem icon={<Calendar />} title="Thời gian" value={new Date(appointmentDetails.appointment_time).toLocaleString('vi-VN', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })} />
                 <InfoItem icon={<Heart />} title="Bệnh án" value={appointmentDetails.medical_history_at_appointment} />
               </div>
               <div className="space-y-3">
