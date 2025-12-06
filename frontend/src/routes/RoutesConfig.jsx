@@ -38,7 +38,21 @@ const AppointmentDetail = lazy(() =>
 const DoctorPatients = lazy(() =>
   import("../pages/Doctors/DoctorDashboard/DoctorPatient")
 );
-
+const AdminAppointments = lazy(() =>
+  import("../pages/Admin/AdminDashboard/AdminAppointment")
+);
+const AdminDoctors = lazy(() =>
+  import("../pages/Admin/AdminDashboard/AdminDoctors")
+);
+const AdminDoctorDetail = lazy(() =>
+  import("../pages/Admin/AdminDashboard/AdminDoctorDetail")
+);
+const AdminPatients = lazy(() =>
+  import("../pages/Admin/AdminDashboard/AdminPatients")
+);
+const AdminPatientDetail = lazy(() =>
+  import("../pages/Admin/AdminDashboard/AdminPatientDetail")
+);
 export const ROUTES_CONFIG = [
   // --- AUTH ---
   {
@@ -113,7 +127,58 @@ export const ROUTES_CONFIG = [
     path: PATHS.ADMIN,
     element: AdminDashboard,
     layout: "none",
+    isPrivate: true,
+    roles: ["admin"],
   },
+  {
+    path: PATHS.ADMIN_APPOINTMENTS,
+    element: AdminAppointments,
+    layout: "none",
+    isPrivate: true,
+    roles: ["admin"],
+  },
+  {
+    path: PATHS.ADMIN_DOCTORS,
+    element: AdminDoctors,
+    layout: "none",
+    isPrivate: true,
+    roles: ["admin"],
+    children: [
+      {
+        index: true,
+        element: AdminDoctors,
+      },
+      { 
+        path:PATHS.ADMIN_DOCTOR_DETAIL, 
+        element: AdminDoctorDetail, 
+      }
+    ],
+  },
+  { 
+    path: PATHS.ADMIN_DOCTOR_DETAIL,
+    element: AdminDoctorDetail,
+    layout: "none",
+    isPrivate: true,
+    roles: ["admin"],
+  },
+  {
+    path: PATHS.ADMIN_PATIENTS,
+    element: AdminPatients,
+    layout: "none",
+    isPrivate: true,
+    roles: ["admin"],
+    children: [
+      {
+        index: true,
+        element: AdminPatients,
+      },
+      {
+        path:PATHS.ADMIN_PATIENT_DETAIL,
+        element: AdminPatientDetail,
+      }
+    ],
+  },
+ 
 
   // --- DOCTOR DASHBOARD ---
   // Layout chính cho tất cả các routes doctor

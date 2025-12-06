@@ -1,0 +1,297 @@
+import React, { useState, useEffect } from 'react';
+import { Search, Eye, Edit, Trash2, User, Phone, Calendar, Heart, Loader } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import AdminLayout from '../Components/AdminLayout';
+import { api } from '../../../api/axios';
+import { toast } from 'react-toastify';
+
+const AdminPatients = () => {
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterGender, setFilterGender] = useState('all');
+  const [stats, setStats] = useState({
+    total: 0,
+    male: 0,
+    female: 0,
+    with_insurance: 0,
+    new_this_month: 0
+  });
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0
+  });
+
+  useEffect(() => {
+    fetchPatients();
+    fetchStatistics();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, filterGender, pagination.current_page]);
+
+  const fetchPatients = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: pagination.current_page,
+        per_page: 15,
+        ...(searchTerm && { search: searchTerm }),
+        ...(filterGender !== 'all' && { gender: filterGender }),
+      });
+
+      const response = await api.get(`/admin/patients?${params}`);
+      if (response.data.success) {
+        const data = response.data.data;
+        setPatients(data.data || []);
+        setPagination({
+          current_page: data.current_page,
+          last_page: data.last_page,
+          total: data.total,
+        });
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Không thể tải danh sách bệnh nhân');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await api.get('/admin/patients/statistics/overview');
+      if (response.data.success) {
+        setStats(response.data.data);
+      }
+    } catch (error) {
+      console.error('Fetch statistics error:', error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bệnh nhân này?')) return;
+    
+    try {
+      const response = await api.delete(`/admin/patients/${id}`);
+      if (response.data.success) {
+        toast.success('Đã xóa bệnh nhân thành công!');
+        fetchPatients();
+        fetchStatistics();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Không thể xóa bệnh nhân');
+    }
+  };
+
+  const calculateAge = (dateOfBirth) => {
+    if (!dateOfBirth) return 'N/A';
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  if (loading && patients.length === 0) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col justify-center items-center h-96 space-y-4">
+          <Loader size={48} className="animate-spin text-blue-600" />
+          <p className="text-gray-500">Đang tải danh sách...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Quản lý bệnh nhân</h1>
+          <p className="text-gray-500 text-sm mt-1">Xem và quản lý hồ sơ bệnh nhân</p>
+        </div>
+
+        {/* Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <StatCard label="Tổng số" value={stats.total} color="blue" />
+          <StatCard label="Nam" value={stats.male} color="blue" />
+          <StatCard label="Nữ" value={stats.female} color="pink" />
+          <StatCard label="Có BHYT" value={stats.with_insurance} color="green" />
+          <StatCard label="Mới tháng này" value={stats.new_this_month} color="purple" />
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Tìm kiếm bệnh nhân..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <select
+              value={filterGender}
+              onChange={(e) => setFilterGender(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Tất cả giới tính</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+              <option value="other">Khác</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Patients Grid */}
+        {patients.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {patients.map((patient) => (
+              <PatientCard
+                key={patient.id}
+                patient={patient}
+                calculateAge={calculateAge}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <p className="text-gray-500">Không tìm thấy bệnh nhân nào</p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.last_page > 1 && (
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, current_page: prev.current_page - 1 }))}
+              disabled={pagination.current_page === 1}
+              className="px-4 py-2 border rounded-lg disabled:opacity-50"
+            >
+              Trước
+            </button>
+            <span className="px-4 py-2">
+              Trang {pagination.current_page} / {pagination.last_page}
+            </span>
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, current_page: prev.current_page + 1 }))}
+              disabled={pagination.current_page === pagination.last_page}
+              className="px-4 py-2 border rounded-lg disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
+        )}
+      </div>
+    </AdminLayout>
+  );
+};
+
+// Patient Card Component
+const PatientCard = ({ patient, calculateAge, onDelete }) => (
+  <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition overflow-hidden">
+    {/* Header */}
+    <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 text-white">
+      <div className="flex items-center gap-3">
+        <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-2xl font-bold">
+          {patient.avatar_url ? (
+            <img 
+              src={patient.avatar_url} 
+              alt={patient.full_name}
+              className="w-full h-full rounded-full object-cover"
+            />
+          ) : (
+            <User size={32} />
+          )}
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-lg">{patient.full_name}</h3>
+          <p className="text-sm text-purple-100">ID: #{patient.id}</p>
+        </div>
+      </div>
+    </div>
+
+    {/* Body */}
+    <div className="p-4 space-y-3">
+      <div className="flex items-center gap-2 text-sm text-gray-600">
+        <Calendar size={16} className="text-gray-400" />
+        <span>
+          {patient.date_of_birth 
+            ? `${calculateAge(patient.date_of_birth)} tuổi`
+            : 'Chưa cập nhật tuổi'
+          }
+        </span>
+        <span className="mx-2">•</span>
+        <span>{patient.gender === 'male' ? 'Nam' : patient.gender === 'female' ? 'Nữ' : 'Khác'}</span>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm text-gray-600">
+        <Phone size={16} className="text-gray-400" />
+        <span>{patient.phone || 'Chưa cập nhật'}</span>
+      </div>
+
+      {patient.insurance_number && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
+            Có BHYT
+          </span>
+          <span className="text-gray-600 text-xs">{patient.insurance_number}</span>
+        </div>
+      )}
+
+      {patient.allergies && (
+        <div className="flex items-start gap-2 text-sm">
+          <Heart size={16} className="text-red-500 mt-0.5" />
+          <div>
+            <p className="font-medium text-gray-700">Dị ứng:</p>
+            <p className="text-gray-600 text-xs line-clamp-2">{patient.allergies}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="pt-3 border-t flex gap-2">
+        <Link
+          to={`/admin/patients/${patient.id}`}
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-sm"
+        >
+          <Eye size={16} />
+          Chi tiết
+        </Link>
+        <button
+          onClick={() => onDelete(patient.id)}
+          className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+          title="Xóa"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const StatCard = ({ label, value, color }) => {
+  const colors = {
+    blue: 'border-blue-500',
+    pink: 'border-pink-500',
+    green: 'border-green-500',
+    purple: 'border-purple-500',
+  };
+
+  return (
+    <div className={`bg-white p-4 rounded-lg border-l-4 ${colors[color]} shadow-sm`}>
+      <p className="text-sm text-gray-500 mb-1">{label}</p>
+      <p className="text-2xl font-bold text-gray-800">{value}</p>
+    </div>
+  );
+};
+
+export default AdminPatients;
