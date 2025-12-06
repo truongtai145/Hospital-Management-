@@ -95,7 +95,7 @@ const Services = () => {
                 alt="Service 1"
               />
               <img
-                src="https://images.unsplash.com/photo-1576091160550-2187d80aeff2?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80"
+                src='https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80'
                 className="rounded-xl shadow-lg w-full h-56 object-cover hover:scale-105 transition-transform duration-500"
                 alt="Service 2"
               />

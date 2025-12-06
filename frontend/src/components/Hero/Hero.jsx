@@ -7,7 +7,7 @@ import Button from '../Button/Button';
 const heroDoctorImage =
   'https://images.unsplash.com/photo-1622253692010-333f2da6031d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
 const teamImage =
-  'https://images.unsplash.com/photo-1622253694268-23c2fe005d52?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+  'https://images.unsplash.com/photo-1579684453423-f84349ef60b0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1800&q=80&h=500';
 
 const Hero = () => {
   return (

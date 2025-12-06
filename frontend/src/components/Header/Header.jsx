@@ -40,7 +40,8 @@ const Header = () => {
   );
 
   return (
-    <header className="w-full bg-white font-sans">
+    <header className="w-full bg-white font-sans sticky top-0 z-[999] shadow-md">
+
       {/* Top Header Info */}
       <div className="hidden md:flex justify-between items-center py-5 container mx-auto max-w-7xl px-10">
         <Link
@@ -76,7 +77,8 @@ const Header = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="bg-primary text-white sticky top-0 z-50 shadow-lg">
+      <nav className="bg-primary text-white shadow-lg">
+
         <div className="container mx-auto max-w-7xl px-10 py-4 flex justify-between items-center">
           <ul className="flex gap-8 lg:gap-12 font-medium text-base lg:text-lg">
             <NavLink to="/" label="Trang chủ" />
