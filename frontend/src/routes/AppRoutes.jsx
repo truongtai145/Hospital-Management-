@@ -16,12 +16,12 @@ export default function AppRoutes() {
     </div>
   );
 
-  // ✅ HÀM MỚI: Render nested routes đệ quy
+  //Render nested routes đệ quy
   const renderRoutes = (routes) => {
     return routes.map((route, index) => {
       const PageComponent = route.element;
       
-      // ✅ Kiểm tra nếu có children (nested routes)
+      //  Kiểm tra nếu có children (nested routes)
       if (route.children && route.children.length > 0) {
         return (
           <Route
@@ -57,11 +57,11 @@ export default function AppRoutes() {
         );
       }
       
-      // ✅ Route thông thường (không có children)
+      // Route thông thường 
       let ElementToRender;
 
       if (route.layout === "public") {
-        // Nếu là public thì bọc trong MainLayout (Header + Footer)
+        // Nếu là public thì bọc trong MainLayout 
         ElementToRender = (
           <MainLayout>
             <PageComponent />

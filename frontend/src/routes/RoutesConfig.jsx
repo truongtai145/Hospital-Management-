@@ -20,7 +20,6 @@ const AppointmentHistory = lazy(() =>
   import("../pages/Patient/AppointmentHistory")
 );
 
-// --- Doctor Components - Đường dẫn chính xác ---
 const DoctorLayout = lazy(() =>
   import("../pages/Doctors/Components/DoctorLayout")
 );
