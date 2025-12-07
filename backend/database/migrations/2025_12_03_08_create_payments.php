@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('total_amount', 15, 2)->comment('Tổng tiền cuối cùng phải trả');
 
             $table->enum('payment_method', ['cash', 'credit_card', 'vnpay', 'insurance'])->nullable();
-            $table->enum('status', ['pending', 'completed', 'failed', 'refunded'])->default('pending');
+            $table->enum('status', ['pending','processing', 'completed', 'failed', 'refunded'])->default('pending');
             $table->string('transaction_id')->unique()->nullable(); 
             $table->datetime('payment_date')->nullable(); 
             $table->text('notes')->nullable(); 

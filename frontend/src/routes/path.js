@@ -13,6 +13,7 @@ export const PATHS = {
   NEWS_DETAIL: "/news/:id",
   CONTACT: "/contact",
   PATIENT_PROFILE: "/patient",
+  PATIENT_PAYMENTS: "/patient/payments",
   PATIENT_APPOINTMENT_HISTORY: "/patient/history",
   APPOINTMENT: "/appointment",
 
@@ -31,6 +32,7 @@ export const PATHS = {
   ADMIN_DOCTOR_DETAIL: "/admin/doctors/:id",
   ADMIN_PATIENTS: "/admin/patients",
   ADMIN_PATIENT_DETAIL: "/admin/patients/:id",
+  ADMIN_PAYMENTS: "/admin/payments",
   // --- SYSTEM ---
   NOT_FOUND: "*",
 };

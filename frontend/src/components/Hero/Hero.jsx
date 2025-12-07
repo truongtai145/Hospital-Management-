@@ -93,7 +93,7 @@ const Hero = () => {
               </Link>
 
               <Link
-                to="/payment"
+                to="patient/payments"
                 className="group bg-secondary p-8 text-white flex flex-col md:flex-row items-center gap-4 hover:bg-blue-400 transition-colors duration-300"
               >
                 <Wallet

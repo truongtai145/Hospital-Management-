@@ -14,7 +14,7 @@ class AdminAppointmentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Appointment::with(['patient', 'doctor.department']);
+      $query = Appointment::with(['patient', 'doctor.department']);
 
         // Filter by status
         if ($request->has('status') && $request->status !== 'all') {

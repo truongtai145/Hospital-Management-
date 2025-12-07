@@ -53,6 +53,8 @@ const AdminPatients = lazy(() =>
 const AdminPatientDetail = lazy(() =>
   import("../pages/Admin/AdminDashboard/AdminPatientDetail")
 );
+const PatientPayments = lazy(() => import("../pages/Patient/PatientPayments"));
+const AdminPayments = lazy(() => import("../pages/Admin/AdminDashboard/AdminPayments"));
 export const ROUTES_CONFIG = [
   // --- AUTH ---
   {
@@ -121,6 +123,13 @@ export const ROUTES_CONFIG = [
     isPrivate: true,
     roles: ["patient"],
   },
+  {
+    path: PATHS.PATIENT_PAYMENTS,
+    element: PatientPayments,
+    layout: "public",
+    isPrivate: true,
+    roles: ["patient"],
+  },
 
   // --- ADMIN ---
   {
@@ -178,7 +187,13 @@ export const ROUTES_CONFIG = [
       }
     ],
   },
- 
+ {
+  path:PATHS.ADMIN_PAYMENTS,
+  element:AdminPayments,
+  layout:"none",
+  isPrivate:true,
+  roles:["admin"],
+ },
 
   // --- DOCTOR DASHBOARD ---
   // Layout chính cho tất cả các routes doctor

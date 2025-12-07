@@ -202,17 +202,46 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            $payment->update([
-                'payment_method' => $request->payment_method,
-                'status' => 'completed',
-                'payment_date' => now(),
-            ]);
+            $paymentMethod = $request->payment_method;
+            
+            // Logic xử lý theo phương thức thanh toán
+            if ($paymentMethod === 'cash') {
+                // Tiền mặt: Chuyển sang "processing" - chờ admin xác nhận
+                $payment->update([
+                    'payment_method' => $paymentMethod,
+                    'status' => 'processing',
+                    'payment_date' => now(),
+                ]);
+                
+                $message = 'Đã ghi nhận thanh toán bằng tiền mặt. Vui lòng chờ xác nhận từ quầy thu ngân.';
+                
+            } elseif ($paymentMethod === 'vnpay') {
+                // VNPay: Chuyển sang "completed" luôn (giả lập thanh toán thành công)
+                // Trong thực tế, bạn sẽ tích hợp với VNPay API
+                $payment->update([
+                    'payment_method' => $paymentMethod,
+                    'status' => 'completed',
+                    'payment_date' => now(),
+                ]);
+                
+                $message = 'Thanh toán VNPay thành công!';
+                
+            } else {
+                // Các phương thức khác: Chuyển sang "completed"
+                $payment->update([
+                    'payment_method' => $paymentMethod,
+                    'status' => 'completed',
+                    'payment_date' => now(),
+                ]);
+                
+                $message = 'Thanh toán thành công!';
+            }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Thanh toán thành công!',
+                'message' => $message,
                 'data' => $payment->load(['appointment.doctor', 'patient'])
             ]);
 
@@ -221,6 +250,43 @@ class PaymentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Thanh toán thất bại: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin xác nhận thanh toán (cho thanh toán tiền mặt)
+     */
+    public function confirmPayment(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $payment = Payment::findOrFail($id);
+
+            if ($payment->status !== 'processing') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chỉ có thể xác nhận hóa đơn đang chờ xác nhận (processing).'
+                ], 400);
+            }
+
+            $payment->update([
+                'status' => 'completed',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xác nhận thanh toán thành công!',
+                'data' => $payment->load(['appointment.doctor', 'patient'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Xác nhận thất bại: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -240,8 +306,13 @@ class PaymentController extends Controller
             ], 404);
         }
 
+        // Load đầy đủ relationships như AdminPaymentModal
         $payments = Payment::where('patient_id', $patient->id)
-            ->with(['appointment.doctor'])
+            ->with([
+                'patient',  // Thông tin bệnh nhân
+                'appointment.doctor.department',  // Thông tin bác sĩ và khoa
+                'appointment'  // Thông tin lịch hẹn (reason, doctor_notes, prescription)
+            ])
             ->orderBy('created_at', 'desc')
             ->get();
 
