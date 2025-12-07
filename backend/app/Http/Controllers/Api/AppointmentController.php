@@ -139,29 +139,48 @@ class AppointmentController extends Controller
 
     
     public function update(Request $request, Appointment $appointment)
-    {
-        // Admin có thể cập nhật trạng thái, ghi chú...
-        $validator = Validator::make($request->all(), [
-            'status' => 'sometimes|in:pending,confirmed,completed,cancelled,no_show',
-            'doctor_notes' => 'nullable|string',
-            'prescription' => 'nullable|string',
-            // Bệnh nhân có thể được phép cập nhật thời gian nếu lịch hẹn chưa được xác nhận
-            'appointment_time' => 'sometimes|date|after:now',
-        ]);
+{
+    $validator = Validator::make($request->all(), [
+        'status' => 'sometimes|in:pending,confirmed,completed,cancelled,no_show',
+        'doctor_notes' => 'nullable|string',
+        'prescription' => 'nullable|string',
+        'appointment_time' => 'sometimes|date|after:now',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $appointment->update($validator->validated());
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cập nhật lịch hẹn thành công!',
-            'data' => $appointment
-        ]);
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
     }
 
+    $oldStatus = $appointment->status;
+    $appointment->update($validator->validated());
+
+    // **QUAN TRỌNG: Tự động tạo payment khi chuyển sang completed**
+    if ($request->status === 'completed' && $oldStatus !== 'completed') {
+        // Kiểm tra xem đã có payment chưa
+        $existingPayment = \App\Models\Payment::where('appointment_id', $appointment->id)->first();
+        
+        if (!$existingPayment) {
+            // Tạo payment với medication_cost = 0 (admin sẽ cập nhật sau)
+            \App\Models\Payment::create([
+                'appointment_id' => $appointment->id,
+                'patient_id' => $appointment->patient_id,
+                'consultation_fee' => $appointment->doctor->consultation_fee ?? 0,
+                'medication_cost' => 0, // Admin sẽ nhập sau
+                'amount' => $appointment->doctor->consultation_fee ?? 0,
+                'payment_method' => null,
+                'status' => 'pending',
+                'transaction_id' => 'INV-' . strtoupper(\Illuminate\Support\Str::random(10)),
+                'notes' => 'Tự động tạo từ lịch hẹn #' . $appointment->id,
+            ]);
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Cập nhật lịch hẹn thành công!',
+        'data' => $appointment
+    ]);
+}
     /**
      * Hủy một lịch hẹn. 
      */

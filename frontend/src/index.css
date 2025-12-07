@@ -6,6 +6,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Style cho input và label nổi */
+  .form-input {
+    @apply block w-full px-4 py-3 text-base text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 
+           appearance-none focus:outline-none focus:ring-0 focus:border-secondary transition-colors;
+  }
+  .form-label {
+    @apply absolute top-3 left-0 text-base text-gray-500 flex items-center
+           duration-300 transform -translate-y-6 scale-75 origin-[0]
+           peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 
+           peer-focus:scale-75 peer-focus:-translate-y-6
+           peer-focus:text-secondary;
+  }
+}
 /* 3. Cấu hình cơ bản cho App Y tế */
 * {
   margin: 0;

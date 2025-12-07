@@ -10,7 +10,6 @@ class Payment extends Model
 {
     use HasFactory;
 
-    
     public const METHOD_CASH = 'cash';
     public const METHOD_CREDIT_CARD = 'credit_card';
     public const METHOD_VNPAY = 'vnpay';
@@ -23,10 +22,12 @@ class Payment extends Model
         self::METHOD_INSURANCE,
     ];
 
-    protected $fillable = [
+   protected $fillable = [
         'appointment_id',
         'patient_id',
-        'amount',
+        'sub_total',
+        'discount',
+        'total_amount',
         'payment_method',
         'status',
         'transaction_id',
@@ -35,10 +36,11 @@ class Payment extends Model
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'sub_total' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
         'payment_date' => 'datetime',
     ];
-
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);

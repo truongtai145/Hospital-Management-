@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Filter, Eye, Edit, Trash2, CheckCircle, XCircle, Loader, AlertCircle } from 'lucide-react';
+import { Calendar, Search, Eye, Trash2, CheckCircle, XCircle, Loader, AlertCircle, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../Components/AdminLayout';
+import AdminPaymentModal from '../AdminDashboard/AdminPaymentModal';
 import { api } from '../../../api/axios';
 import { toast } from 'react-toastify';
 
@@ -49,6 +50,10 @@ const AdminAppointments = () => {
     completed: 0,
     cancelled: 0
   });
+
+  // Payment Modal States
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   useEffect(() => {
     fetchAppointments();
@@ -134,6 +139,11 @@ const AdminAppointments = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể xóa lịch hẹn');
     }
+  };
+
+  const handleOpenPaymentModal = (appointment) => {
+    setSelectedAppointment(appointment);
+    setPaymentModalOpen(true);
   };
 
   if (loading && appointments.length === 0) {
@@ -283,6 +293,18 @@ const AdminAppointments = () => {
                             </button>
                           </>
                         )}
+                        
+                        {/* Nút hóa đơn - chỉ hiện khi completed */}
+                        {apt.status === 'completed' && (
+                          <button
+                            onClick={() => handleOpenPaymentModal(apt)}
+                            className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition"
+                            title="Hóa đơn"
+                          >
+                            <DollarSign size={16} />
+                          </button>
+                        )}
+                        
                         <Link
                           to={`/admin/appointments/${apt.id}`}
                           className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
@@ -331,6 +353,19 @@ const AdminAppointments = () => {
           )}
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <AdminPaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedAppointment(null);
+        }}
+        appointment={selectedAppointment}
+        onSuccess={() => {
+          fetchAppointments();
+        }}
+      />
     </AdminLayout>
   );
 };

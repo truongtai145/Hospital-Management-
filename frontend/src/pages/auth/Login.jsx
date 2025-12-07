@@ -89,41 +89,60 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary focus:ring-opacity-20 transition duration-200 bg-gray-50 focus:bg-white"
-                placeholder="bacsi@benhvien.com"
+                placeholder="user@benhvien.com"
                 required
               />
             </div>
           </div>
 
-          {/* Password Input */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-gray-700">Mật khẩu</label>
-              <Link to="/forgot-password" className="text-xs text-secondary hover:underline font-medium transition-all hover:text-blue-700">
-                Quên mật khẩu?
-              </Link>
-            </div>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-secondary transition-colors" />
-              </div>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary focus:ring-opacity-20 transition duration-200 bg-gray-50 focus:bg-white"
-                placeholder="••••••••"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-          </div>
+         {/* Password Input */}
+<div className="space-y-2">
+  <label className="text-sm font-medium text-gray-700">Mật khẩu</label>
+
+  <div className="relative group">
+    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-secondary transition-colors" />
+    </div>
+
+    <input
+      type={showPassword ? "text" : "password"}
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary focus:ring-opacity-20 transition duration-200 bg-gray-50 focus:bg-white"
+      placeholder="••••••••"
+      required
+    />
+
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+    >
+      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+    </button>
+  </div>
+
+  {/* NEW – Remember & Forgot in one row */}
+  <div className="flex items-center justify-between pt-1">
+    {/* Remember me */}
+    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+      <input
+        type="checkbox"
+        className="h-4 w-4 rounded border-gray-300 text-secondary focus:ring-secondary"
+      />
+      Nhớ tôi
+    </label>
+
+    {/* Forgot password */}
+    <Link
+      to="/forgot-password"
+      className="text-sm text-secondary hover:underline hover:text-blue-700 transition-all"
+    >
+      Quên mật khẩu?
+    </Link>
+  </div>
+</div>
+
 
           {/* Submit Button */}
           <button

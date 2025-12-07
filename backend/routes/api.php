@@ -33,3 +33,4 @@ require __DIR__.'/../routes/api/department.php';
 require __DIR__.'/../routes/api/doctor.php';
 require __DIR__.'/../routes/api/appointment.php';
 require __DIR__.'/../routes/api/admin.php';
+require __DIR__.'/../routes/api/payment.php';
