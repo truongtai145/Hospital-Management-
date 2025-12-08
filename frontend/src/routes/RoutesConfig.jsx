@@ -55,8 +55,10 @@ const AdminPatientDetail = lazy(() =>
 );
 const PatientPayments = lazy(() => import("../pages/Patient/PatientPayments"));
 const AdminPayments = lazy(() => import("../pages/Admin/AdminDashboard/AdminPayments"));
+const PaymentResult = lazy(() => import("../pages/Patient/PaymentResult"));
 export const ROUTES_CONFIG = [
   // --- AUTH ---
+ 
   {
     path: PATHS.LOGIN,
     element: Login,
@@ -126,6 +128,13 @@ export const ROUTES_CONFIG = [
   {
     path: PATHS.PATIENT_PAYMENTS,
     element: PatientPayments,
+    layout: "public",
+    isPrivate: true,
+    roles: ["patient"],
+  },
+  {
+    path: "/payment-result",
+    element: PaymentResult,
     layout: "public",
     isPrivate: true,
     roles: ["patient"],

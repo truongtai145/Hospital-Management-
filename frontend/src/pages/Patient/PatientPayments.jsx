@@ -48,15 +48,28 @@ const PaymentModal = ({ isOpen, onClose, payment, onSuccess }) => {
   ];
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!paymentMethod) {
-      toast.error('Vui lòng chọn phương thức thanh toán');
-      return;
-    }
+  e.preventDefault();
+  
+  if (!paymentMethod) {
+    toast.error('Vui lòng chọn phương thức thanh toán');
+    return;
+  }
 
-    setLoading(true);
-    try {
+  setLoading(true);
+  try {
+    // ✅ XỬ LÝ VNPAY
+    if (paymentMethod === 'vnpay') {
+      const response = await api.post('/patient/payments/create-vnpay', {
+        payment_id: payment.id
+      });
+
+      if (response.data.success && response.data.paymentUrl) {
+        // Chuyển hướng đến VNPay
+        window.location.href = response.data.paymentUrl;
+        return;
+      }
+    } else {
+      // Xử lý các phương thức khác
       const response = await api.post(`/patient/payments/${payment.id}/pay`, {
         payment_method: paymentMethod
       });
@@ -66,12 +79,13 @@ const PaymentModal = ({ isOpen, onClose, payment, onSuccess }) => {
         onSuccess?.();
         onClose();
       }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Thanh toán thất bại');
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Thanh toán thất bại');
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!isOpen || !payment) return null;
 

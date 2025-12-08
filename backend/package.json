@@ -9,6 +9,7 @@
         "lodash": "^4.17.19"
     },
     "dependencies": {
-        "react-calendar": "^6.0.0"
+        "react-calendar": "^6.0.0",
+        "vnpay": "^2.4.4"
     }
 }
