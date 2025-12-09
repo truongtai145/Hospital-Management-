@@ -26,6 +26,7 @@ import { Link } from 'react-router-dom';
 import AdminLayout from '../Components/AdminLayout';
 import { api } from '../../../api/axios';
 import { toast } from 'react-toastify';
+import Pagination from "../../../components/Pagination/Pagination";
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -116,7 +117,7 @@ const AdminDashboard = () => {
     },
     { 
       label: "Doanh thu ngày", 
-      value: stats?.revenue?.total ? `${(stats.revenue.total / 1000000).toFixed(1)}M ₫` : "0 ₫", 
+      value: stats?.revenue?.total ? `${(stats.revenue.total / 1000000).toFixed(1)}M VND` : "0 VND", 
       desc: `Trung bình ${stats?.revenue?.average ? Math.round(stats.revenue.average / 1000) + 'k' : '0'}/lượt`, 
       icon: DollarSign, 
       color: "bg-green-100 text-green-600",
@@ -294,7 +295,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentAppointments.map((app, idx) => (
+                  {recentAppointments.slice(0, 5).map((app, idx)  => (
                     <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition last:border-0">
                       <td className="py-4 text-sm font-bold text-gray-700">{app.code}</td>
                       <td className="py-4 text-sm font-medium text-primary">{app.patient}</td>

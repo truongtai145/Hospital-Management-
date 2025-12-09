@@ -56,7 +56,7 @@ const Header = () => {
             <Phone className="w-6 h-6 text-secondary" />
             <div>
               <p className="font-bold uppercase text-xs tracking-wide">Khẩn cấp</p>
-              <p className="text-secondary font-medium text-lg">(237) 681-812-255</p>
+              <p className="text-secondary font-medium text-lg">1800 1999</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -70,7 +70,7 @@ const Header = () => {
             <MapPin className="w-6 h-6 text-secondary" />
             <div>
               <p className="font-bold uppercase text-xs tracking-wide">Địa điểm</p>
-              <p className="text-secondary font-medium text-lg">0123 Quận 1, TP.HCM</p>
+              <p className="text-secondary font-medium text-lg">123 Quận 1, TP.HCM</p>
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@ const Header = () => {
                       to="/patient/history"
                       className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition"
                     >
-                      <FileText size={16} className="text-secondary" /> Lịch sử khám
+                      <FileText size={16} className="text-secondary" /> Lịch khám
                     </Link>
                   )}
 

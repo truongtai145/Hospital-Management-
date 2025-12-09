@@ -91,15 +91,15 @@ const ContactPage = () => {
             <div className="bg-blue-100 p-8 rounded-lg flex flex-col items-start justify-center hover:shadow-lg transition-all">
                <Phone className="text-primary w-8 h-8 mb-4" />
                <h4 className="font-bold text-primary uppercase mb-2">Khẩn cấp</h4>
-               <p className="text-gray-600">(237) 681-812-255</p>
-               <p className="text-gray-600">(237) 666-331-894</p>
+               <p className="text-gray-600">1800 1129</p>
+               <p className="text-gray-600">1800 1999</p>
             </div>
 
             {/* Card 2: Location (Màu đậm theo thiết kế hình 3) */}
             <div className="bg-primary p-8 rounded-lg flex flex-col items-start justify-center hover:shadow-lg transition-all text-white">
                <MapPin className="w-8 h-8 mb-4" />
                <h4 className="font-bold uppercase mb-2">Địa chỉ</h4>
-               <p className="text-blue-200">0123 Quận 1, TP.HCM</p>
+               <p className="text-blue-200">123 Quận 1, TP.HCM</p>
                <p className="text-blue-200">9876 Việt Nam</p>
             </div>
 
@@ -115,8 +115,8 @@ const ContactPage = () => {
             <div className="bg-blue-100 p-8 rounded-lg flex flex-col items-start justify-center hover:shadow-lg transition-all">
                <Clock className="text-primary w-8 h-8 mb-4" />
                <h4 className="font-bold text-primary uppercase mb-2">Giờ làm việc</h4>
-               <p className="text-gray-600 text-sm">T2-T7: 09:00 - 20:00</p>
-               <p className="text-gray-600 text-sm">Chủ nhật: Cấp cứu</p>
+               <p className="text-gray-600 text-sm">T2-CN: 09:00 - 20:00</p>
+            
             </div>
 
           </div>

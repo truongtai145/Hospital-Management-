@@ -1,12 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, User, Mail, Phone, MapPin, Calendar, Heart, 
-  FileText, Activity, Clock, Loader, AlertCircle, CreditCard
-} from 'lucide-react';
-import AdminLayout from '../Components/AdminLayout';
-import { api } from '../../../api/axios';
-import { toast } from 'react-toastify';
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Heart,
+  FileText,
+  Activity,
+  Clock,
+  Loader,
+  AlertCircle,
+  CreditCard,
+} from "lucide-react";
+import AdminLayout from "../Components/AdminLayout";
+import { api } from "../../../api/axios";
+import { toast } from "react-toastify";
+import Pagination from "../../../components/Pagination/Pagination";
 
 const AdminPatientDetail = () => {
   const { id } = useParams();
@@ -19,13 +31,13 @@ const AdminPatientDetail = () => {
 
   useEffect(() => {
     fetchPatientDetail();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchPatientDetail = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await api.get(`/admin/patients/${id}`);
       if (response.data.success) {
@@ -34,7 +46,8 @@ const AdminPatientDetail = () => {
         setStats(response.data.data.stats);
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.message || 'Không thể tải thông tin bệnh nhân';
+      const errorMsg =
+        error.response?.data?.message || "Không thể tải thông tin bệnh nhân";
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -43,12 +56,15 @@ const AdminPatientDetail = () => {
   };
 
   const calculateAge = (dateOfBirth) => {
-    if (!dateOfBirth) return 'N/A';
+    if (!dateOfBirth) return "N/A";
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
       age--;
     }
     return age;
@@ -71,10 +87,14 @@ const AdminPatientDetail = () => {
         <div className="flex flex-col justify-center items-center h-96 space-y-4">
           <AlertCircle size={64} className="text-red-500" />
           <div className="text-center">
-            <p className="text-xl font-semibold text-gray-800 mb-2">Có lỗi xảy ra</p>
-            <p className="text-gray-600 mb-4">{error || 'Không tìm thấy bệnh nhân'}</p>
-            <button 
-              onClick={() => navigate('/admin/patients')}
+            <p className="text-xl font-semibold text-gray-800 mb-2">
+              Có lỗi xảy ra
+            </p>
+            <p className="text-gray-600 mb-4">
+              {error || "Không tìm thấy bệnh nhân"}
+            </p>
+            <button
+              onClick={() => navigate("/admin/patients")}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all"
             >
               Quay lại danh sách
@@ -91,7 +111,7 @@ const AdminPatientDetail = () => {
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <button
-            onClick={() => navigate('/admin/patients')}
+            onClick={() => navigate("/admin/patients")}
             className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors mb-4"
           >
             <ArrowLeft size={20} />
@@ -102,8 +122,8 @@ const AdminPatientDetail = () => {
           <div className="flex items-start gap-6">
             <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold">
               {patient.avatar_url ? (
-                <img 
-                  src={patient.avatar_url} 
+                <img
+                  src={patient.avatar_url}
                   alt={patient.full_name}
                   className="w-full h-full rounded-full object-cover"
                 />
@@ -112,34 +132,43 @@ const AdminPatientDetail = () => {
               )}
             </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">{patient.full_name}</h1>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                {patient.full_name}
+              </h1>
               <p className="text-lg text-gray-600 mb-4">
                 Bệnh nhân ID: #{patient.id}
               </p>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Calendar size={18} className="text-gray-400" />
                   <span className="text-sm">
-                    {patient.date_of_birth 
+                    {patient.date_of_birth
                       ? `${calculateAge(patient.date_of_birth)} tuổi`
-                      : 'Chưa cập nhật'
-                    }
+                      : "Chưa cập nhật"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <User size={18} className="text-gray-400" />
                   <span className="text-sm">
-                    {patient.gender === 'male' ? 'Nam' : patient.gender === 'female' ? 'Nữ' : 'Khác'}
+                    {patient.gender === "male"
+                      ? "Nam"
+                      : patient.gender === "female"
+                      ? "Nữ"
+                      : "Khác"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Mail size={18} className="text-gray-400" />
-                  <span className="text-sm">{patient.user?.email || 'N/A'}</span>
+                  <span className="text-sm">
+                    {patient.user?.email || "N/A"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Phone size={18} className="text-gray-400" />
-                  <span className="text-sm">{patient.phone || 'Chưa cập nhật'}</span>
+                  <span className="text-sm">
+                    {patient.phone || "Chưa cập nhật"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -177,23 +206,35 @@ const AdminPatientDetail = () => {
                 <User className="text-blue-600" size={20} />
                 Thông tin cá nhân
               </h3>
-              
+
               <div className="space-y-4">
                 <InfoRow label="Họ và tên" value={patient.full_name} />
-                <InfoRow 
-                  label="Ngày sinh" 
-                  value={patient.date_of_birth 
-                    ? new Date(patient.date_of_birth).toLocaleDateString('vi-VN')
-                    : 'Chưa cập nhật'
-                  } 
+                <InfoRow
+                  label="Ngày sinh"
+                  value={
+                    patient.date_of_birth
+                      ? new Date(patient.date_of_birth).toLocaleDateString(
+                          "vi-VN"
+                        )
+                      : "Chưa cập nhật"
+                  }
                 />
-                <InfoRow 
-                  label="Giới tính" 
-                  value={patient.gender === 'male' ? 'Nam' : patient.gender === 'female' ? 'Nữ' : 'Khác'} 
+                <InfoRow
+                  label="Giới tính"
+                  value={
+                    patient.gender === "male"
+                      ? "Nam"
+                      : patient.gender === "female"
+                      ? "Nữ"
+                      : "Khác"
+                  }
                 />
-                <InfoRow label="Số điện thoại" value={patient.phone || 'Chưa cập nhật'} />
-                <InfoRow label="Email" value={patient.user?.email || 'N/A'} />
-                
+                <InfoRow
+                  label="Số điện thoại"
+                  value={patient.phone || "Chưa cập nhật"}
+                />
+                <InfoRow label="Email" value={patient.user?.email || "N/A"} />
+
                 {patient.address && (
                   <div className="pt-3 border-t">
                     <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
@@ -224,7 +265,7 @@ const AdminPatientDetail = () => {
                 <Heart className="text-red-600" size={20} />
                 Thông tin y tế
               </h3>
-              
+
               <div className="space-y-4">
                 {patient.allergies && (
                   <div>
@@ -237,7 +278,7 @@ const AdminPatientDetail = () => {
                     </p>
                   </div>
                 )}
-                
+
                 {patient.medical_history && (
                   <div>
                     <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
@@ -290,9 +331,9 @@ const AdminPatientDetail = () => {
 // eslint-disable-next-line no-unused-vars
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const colors = {
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    yellow: 'bg-yellow-100 text-yellow-600',
+    blue: "bg-blue-100 text-blue-600",
+    green: "bg-green-100 text-green-600",
+    yellow: "bg-yellow-100 text-yellow-600",
   };
 
   return (
@@ -322,7 +363,7 @@ const AppointmentCard = ({ appointment }) => {
     completed: "bg-green-100 text-green-700",
     cancelled: "bg-red-100 text-red-700",
   };
-  
+
   const statusLabels = {
     pending: "Chờ xác nhận",
     confirmed: "Đã xác nhận",
@@ -335,21 +376,31 @@ const AppointmentCard = ({ appointment }) => {
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="font-semibold text-gray-800">
-            {new Date(appointment.appointment_time).toLocaleDateString('vi-VN', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+            {new Date(appointment.appointment_time).toLocaleDateString(
+              "vi-VN",
+              {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }
+            )}
           </p>
           <p className="text-sm text-gray-500">
-            {new Date(appointment.appointment_time).toLocaleTimeString('vi-VN', {
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
+            {new Date(appointment.appointment_time).toLocaleTimeString(
+              "vi-VN",
+              {
+                hour: "2-digit",
+                minute: "2-digit",
+              }
+            )}
           </p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyles[appointment.status]}`}>
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            statusStyles[appointment.status]
+          }`}
+        >
           {statusLabels[appointment.status]}
         </span>
       </div>
@@ -357,12 +408,12 @@ const AppointmentCard = ({ appointment }) => {
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <User size={16} className="text-gray-400" />
-          <span>BS. {appointment.doctor?.full_name || 'N/A'}</span>
+          <span>BS. {appointment.doctor?.full_name || "N/A"}</span>
         </div>
-        
+
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <FileText size={16} className="text-gray-400" />
-          <span>{appointment.department?.name || 'N/A'}</span>
+          <span>{appointment.department?.name || "N/A"}</span>
         </div>
 
         {appointment.reason && (
@@ -375,7 +426,9 @@ const AppointmentCard = ({ appointment }) => {
         {appointment.doctor_notes && (
           <div className="mt-2 pt-2 border-t border-gray-100">
             <p className="text-sm text-gray-500 mb-1">Ghi chú của bác sĩ:</p>
-            <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded">{appointment.doctor_notes}</p>
+            <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded">
+              {appointment.doctor_notes}
+            </p>
           </div>
         )}
       </div>

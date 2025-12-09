@@ -13,20 +13,20 @@ const Footer = () => {
         <div>
           <h4 className="font-bold text-lg mb-6">Liên kết quan trọng</h4>
           <ul className="space-y-2 text-blue-200">
-            <li><a href="#" className="hover:text-white">Đặt lịch hẹn</a></li>
-            <li><a href="#" className="hover:text-white">Bác sĩ</a></li>
-            <li><a href="#" className="hover:text-white">Dịch vụ</a></li>
-            <li><a href="#" className="hover:text-white">Giới thiệu</a></li>
+            <li><a href="/appointment" className="hover:text-white">Đặt lịch hẹn</a></li>
+            <li><a href="/doctors" className="hover:text-white">Bác sĩ</a></li>
+            <li><a href="/services" className="hover:text-white">Dịch vụ</a></li>
+            <li><a href="/about" className="hover:text-white">Giới thiệu</a></li>
           </ul>
         </div>
         
         <div>
           <h4 className="font-bold text-lg mb-6">Liên hệ</h4>
           <ul className="space-y-2 text-blue-200">
-            <li>Gọi: (237) 681-812-255</li>
+            <li>Gọi: 1800 1129</li>
             <li>Email: fildineesoe@gmail.com</li>
-            <li>Địa chỉ: 0123 Quận 1, TP.HCM</li>
-            <li>Việt Nam</li>
+            <li>Địa chỉ: 123 Quận 1, TP.HCM</li>
+            <li>TP HCM , Việt Nam</li>
           </ul>
         </div>
         
@@ -42,7 +42,7 @@ const Footer = () => {
       </div>
       
       <div className="container mx-auto px-4 pt-8 border-t border-blue-800 flex flex-col md:flex-row justify-between items-center text-blue-200 text-sm">
-        <p>© 2025 Tên bệnh viện. All Rights Reserved by PNTEC-LTD</p>
+        <p>© 2025 MEDDICAL. All Rights Reserved by PNTEC-LTD</p>
         <div className="flex gap-4 mt-4 md:mt-0">
           <Linkedin className="w-5 h-5 cursor-pointer hover:text-white" />
           <Facebook className="w-5 h-5 cursor-pointer hover:text-white" />

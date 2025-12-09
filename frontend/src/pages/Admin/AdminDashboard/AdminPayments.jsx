@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, CheckCircle, X, Clock, Loader, Shield } from 'lucide-react';
+import { DollarSign, CheckCircle, X, Clock, Loader, Shield, ChevronLeft, ChevronRight } from 'lucide-react';
 import AdminLayout from '../Components/AdminLayout';
 import { api } from '../../../api/axios';
 import { toast } from 'react-toastify';
+import Pagination from '../../../components/Pagination/Pagination';
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
@@ -32,23 +33,30 @@ const StatusBadge = ({ status }) => {
 const AdminPayments = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('processing'); // Mặc định hiện "Chờ xác nhận"
+  const [filterStatus, setFilterStatus] = useState('processing');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
 
   useEffect(() => {
     fetchPayments();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterStatus]);
+  }, [filterStatus, currentPage]);
 
   const fetchPayments = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        status: filterStatus === 'all' ? '' : filterStatus,
+        page: currentPage,
+        per_page: 5,
+        ...(filterStatus !== 'all' && { status: filterStatus }),
       });
       
       const response = await api.get(`/admin/payments?${params}`);
       if (response.data.success) {
-        setPayments(response.data.data.data || response.data.data);
+        const data = response.data.data;
+        setPayments(data.data || data);
+        setCurrentPage(data.current_page || 1);
+        setLastPage(data.last_page || 1);
       }
     // eslint-disable-next-line no-unused-vars
     } catch (error) {
@@ -98,7 +106,10 @@ const AdminPayments = () => {
         <div className="bg-white rounded-xl border p-4">
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2 border rounded-lg"
           >
             <option value="all">Tất cả</option>
@@ -115,72 +126,81 @@ const AdminPayments = () => {
           </div>
         ) : (
           <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="p-4 text-left">Mã HĐ</th>
-                  <th className="p-4 text-left">Bệnh nhân</th>
-                  <th className="p-4 text-left">Số tiền</th>
-                  <th className="p-4 text-left">Phương thức</th>
-                  <th className="p-4 text-center">Trạng thái</th>
-                  <th className="p-4 text-center">Hành động</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50">
-                    <td className="p-4 font-medium">#{payment.transaction_id}</td>
-                    <td className="p-4">
-                      <p className="font-medium">{payment.patient?.full_name}</p>
-                      <p className="text-xs text-gray-500">{payment.patient?.phone}</p>
-                    </td>
-                    <td className="p-4">
-                      <p className="font-bold text-green-600">{formatCurrency(payment.total_amount)}</p>
-                      {payment.discount > 0 && (
-                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                          <Shield size={12} /> Giảm {formatCurrency(payment.discount)}
-                        </p>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      {payment.payment_method === 'cash' ? 'Tiền mặt' :
-                       payment.payment_method === 'vnpay' ? 'VNPay' :
-                       payment.payment_method || '-'}
-                    </td>
-                    <td className="p-4 text-center">
-                      <StatusBadge status={payment.status} />
-                    </td>
-                    <td className="p-4">
-                      <div className="flex justify-center gap-2">
-                        {payment.status === 'processing' && (
-                          <>
-                            <button
-                              onClick={() => handleConfirm(payment.id)}
-                              className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"
-                              title="Xác nhận"
-                            >
-                              <CheckCircle size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleCancel(payment.id)}
-                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
-                              title="Hủy"
-                            >
-                              <X size={16} />
-                            </button>
-                          </>
-                        )}
-                        {payment.status === 'completed' && (
-                          <span className="text-green-600 text-sm">
-                            {formatDate(payment.payment_date)}
-                          </span>
-                        )}
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="p-4 text-left">Mã HĐ</th>
+                    <th className="p-4 text-left">Bệnh nhân</th>
+                    <th className="p-4 text-left">Số tiền</th>
+                    <th className="p-4 text-left">Phương thức</th>
+                    <th className="p-4 text-center">Trạng thái</th>
+                    <th className="p-4 text-center">Hành động</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {payments.map((payment) => (
+                    <tr key={payment.id} className="hover:bg-gray-50">
+                      <td className="p-4 font-medium">#{payment.transaction_id}</td>
+                      <td className="p-4">
+                        <p className="font-medium">{payment.patient?.full_name}</p>
+                        <p className="text-xs text-gray-500">{payment.patient?.phone}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="font-bold text-green-600">{formatCurrency(payment.total_amount)}</p>
+                        {payment.discount > 0 && (
+                          <p className="text-xs text-gray-500 flex items-center gap-1">
+                            <Shield size={12} /> Giảm {formatCurrency(payment.discount)}
+                          </p>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        {payment.payment_method === 'cash' ? 'Tiền mặt' :
+                         payment.payment_method === 'vnpay' ? 'VNPay' :
+                         payment.payment_method || '-'}
+                      </td>
+                      <td className="p-4 text-center">
+                        <StatusBadge status={payment.status} />
+                      </td>
+                      <td className="p-4">
+                        <div className="flex justify-center gap-2">
+                          {payment.status === 'processing' && (
+                            <>
+                              <button
+                                onClick={() => handleConfirm(payment.id)}
+                                className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"
+                                title="Xác nhận"
+                              >
+                                <CheckCircle size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleCancel(payment.id)}
+                                className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
+                                title="Hủy"
+                              >
+                                <X size={16} />
+                              </button>
+                            </>
+                          )}
+                          {payment.status === 'completed' && (
+                            <span className="text-green-600 text-sm">
+                              {formatDate(payment.payment_date)}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              lastPage={lastPage}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
       </div>

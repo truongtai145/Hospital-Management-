@@ -1,5 +1,5 @@
 import React from 'react';
-// ✅ SỬ DỤNG NavLink ĐỂ CÓ TÍNH NĂNG ACTIVE TỰ ĐỘNG
+
 import { Link, NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -29,7 +29,7 @@ const SideNav = ({ handleLogout }) => {
     <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col fixed left-0 top-0 h-full z-20">
       {/* Logo */}
       <div className="h-20 flex items-center px-6 border-b border-gray-200">
-        <Link to="/" className="text-2xl font-bold text-primary uppercase tracking-wider">
+        <Link to="#" className="text-2xl font-bold text-primary uppercase tracking-wider">
           Med<span className="text-secondary">dical</span>
         </Link>
       </div>
@@ -68,7 +68,7 @@ const SideNav = ({ handleLogout }) => {
                   isActive ? 'bg-slate-200 text-primary' : 'text-gray-600 hover:bg-slate-100'
               }`}
             >
-              <Settings size={20} /> Cài đặt
+            
             </NavLink>
           </li>
           <li>

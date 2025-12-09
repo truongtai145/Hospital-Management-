@@ -12,14 +12,14 @@ const ContactInfo = () => {
         <div className="bg-accent p-8 rounded text-primary hover:bg-primary hover:text-white transition group">
           <Phone className="w-8 h-8 mb-4 text-primary group-hover:text-white" />
           <h4 className="font-bold uppercase mb-2">Khẩn cấp</h4>
-          <p>(237) 681-812-255</p>
-          <p>(237) 666-331-894</p>
+          <p>1800 1129</p>
+          <p>1800 1999</p>
         </div>
         <div className="bg-primary p-8 rounded text-white">
           <MapPin className="w-8 h-8 mb-4" />
           <h4 className="font-bold uppercase mb-2">Địa điểm</h4>
           <p>0123 Quận 1, TP.HCM</p>
-          <p>9876 Việt Nam</p>
+          <p> Việt Nam</p>
         </div>
         <div className="bg-accent p-8 rounded text-primary hover:bg-primary hover:text-white transition group">
           <Mail className="w-8 h-8 mb-4 text-primary group-hover:text-white" />
@@ -30,8 +30,9 @@ const ContactInfo = () => {
         <div className="bg-accent p-8 rounded text-primary hover:bg-primary hover:text-white transition group">
           <Clock className="w-8 h-8 mb-4 text-primary group-hover:text-white" />
           <h4 className="font-bold uppercase mb-2">Giờ làm việc</h4>
-          <p>T2-T7: 09:00 - 20:00</p>
-          <p>CN: Chỉ cấp cứu</p>
+          <p>T2-CN: 08:00 - 20:00</p>
+          <p>Hỗ trợ 24/7</p>
+        
         </div>
       </div>
     </section>

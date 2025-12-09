@@ -7,9 +7,10 @@ const NewsCard = ({ image }) => (
       <img src={image} alt="News" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
     </div>
     <div className="flex flex-col justify-center">
-      <p className="text-secondary text-xs font-bold mb-1">Thứ 2, 05/09/2023 | Bởi Admin</p>
+      <p className="text-secondary text-xs font-bold mb-1">Thứ 2, 05/09/2025 | Bởi Admin</p>
       <h3 className="text-primary font-bold text-lg leading-tight mb-2 group-hover:text-secondary transition-colors">
-        Tiêu đề bài viết y tế sẽ nằm ở đây, không quá dài
+        Cách duy trì lối sống lành mạnh để phòng ngừa bệnh tật
+        
       </h3>
       <div className="flex gap-4 text-gray-400 text-sm mt-auto">
          <span className="flex items-center gap-1"><Eye size={14}/> 68</span>

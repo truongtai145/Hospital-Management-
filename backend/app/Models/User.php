@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Conversation;
+use Tymon\JWTAuth\Contracts\JWTSubject; 
 
 class User extends Authenticatable
 {
@@ -46,5 +48,9 @@ class User extends Authenticatable
     public function refreshTokens()
     {
         return $this->hasMany(RefreshToken::class);
+    }
+     public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class);
     }
 }

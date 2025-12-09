@@ -1,6 +1,7 @@
 import React from 'react';
 import Header from '../Header/Header';
 import Footer from '../Footer/Footer';
+import FloatingContact from '../FloatingContact/FloatingContact';
 
 const Layout = ({ children }) => {
   return (
@@ -8,8 +9,10 @@ const Layout = ({ children }) => {
       <Header />
       <main className="flex-grow">
         {children}
+       <FloatingContact />
       </main>
       <Footer />
+ 
     </div>
   );
 };
