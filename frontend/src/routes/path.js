@@ -33,6 +33,7 @@ export const PATHS = {
   ADMIN_PATIENTS: "/admin/patients",
   ADMIN_PATIENT_DETAIL: "/admin/patients/:id",
   ADMIN_PAYMENTS: "/admin/payments",
+  FORGOTPASSWORD: "/forgot-password",
   // --- SYSTEM ---
   NOT_FOUND: "*",
 };

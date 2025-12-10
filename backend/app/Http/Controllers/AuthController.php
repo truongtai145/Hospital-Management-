@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Patient;
 use App\Models\RefreshToken;
+use App\Models\PasswordResetToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Firebase\JWT\JWT;
@@ -152,114 +154,6 @@ class AuthController extends Controller
     }
 
     /**
-     * Đăng xuất
-     */
-    public function logout(Request $request)
-    {
-        try {
-            $token = $request->bearerToken();
-            
-            if (!$token) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Token not provided'
-                ], 400);
-            }
-
-            // Decode token để lấy user_id
-            $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
-            
-            // Revoke refresh token
-            if ($request->has('refresh_token')) {
-                RefreshToken::where('token', $request->refresh_token)
-                    ->where('user_id', $decoded->sub)
-                    ->update(['is_revoked' => true]);
-            }
-
-            // JWT không thể invalidate, nhưng ta đã revoke refresh token
-            // Client phải tự xóa token
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Đăng xuất thành công'
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Đăng xuất thất bại: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Lấy thông tin user từ token
-     */
-    public function me(Request $request)
-    {
-        try {
-            $token = $request->bearerToken();
-            
-            if (!$token) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Token not provided'
-                ], 401);
-            }
-
-            // Decode và verify token
-            $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
-            
-            // Lấy user từ DB
-            $user = User::find($decoded->sub);
-            
-            if (!$user || !$user->is_active) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not found or inactive'
-                ], 401);
-            }
-
-            // Load profile
-            $profile = null;
-            switch ($user->role) {
-                case 'patient':
-                    $profile = $user->patient;
-                    break;
-                case 'doctor':
-                    $profile = $user->doctor;
-                    break;
-                case 'admin':
-                    $profile = $user->adminProfile;
-                    break;
-            }
-
-            return response()->json([
-                'success' => true,
-                'user' => [
-                    'id' => $user->id,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'is_active' => $user->is_active,
-                    'last_login' => $user->last_login,
-                    'profile' => $profile,
-                ]
-            ], 200);
-
-        } catch (\Firebase\JWT\ExpiredException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token expired'
-            ], 401);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid token'
-            ], 401);
-        }
-    }
-
-    /**
      * Refresh access token
      */
     public function refresh(Request $request)
@@ -309,21 +203,216 @@ class AuthController extends Controller
     }
 
     /**
+     * Gửi email reset password
+     */
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email không tồn tại trong hệ thống',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tài khoản đã bị khóa'
+                ], 403);
+            }
+
+            // Xóa các token cũ chưa sử dụng của user này
+            PasswordResetToken::where('email', $request->email)
+                ->where('is_used', false)
+                ->delete();
+
+            // Tạo token reset mới (6 số ngẫu nhiên)
+            $token = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+            // Lưu token vào database (hết hạn sau 15 phút)
+            PasswordResetToken::create([
+                'email' => $request->email,
+                'token' => Hash::make($token),
+                'expires_at' => Carbon::now()->addMinutes(15),
+                'is_used' => false
+            ]);
+
+            // Gửi email
+            Mail::send('emails.reset-password', [
+                'user' => $user,
+                'token' => $token,
+                'expires_in' => 15
+            ], function ($message) use ($request) {
+                $message->to($request->email)
+                    ->subject('Yêu cầu đặt lại mật khẩu - Meddical Hospital');
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mã xác thực đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Xác thực OTP code
+     */
+    public function verifyResetToken(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'token' => 'required|string|size:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Tìm token chưa sử dụng và chưa hết hạn
+        $resetToken = PasswordResetToken::where('email', $request->email)
+            ->where('is_used', false)
+            ->where('expires_at', '>', now())
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$resetToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã xác thực không hợp lệ hoặc đã hết hạn'
+            ], 400);
+        }
+
+        // Verify token
+        if (!Hash::check($request->token, $resetToken->token)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã xác thực không chính xác'
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mã xác thực hợp lệ',
+        ], 200);
+    }
+
+    /**
+     * Reset password với token đã verify
+     */
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'token' => 'required|string|size:6',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Tìm token
+            $resetToken = PasswordResetToken::where('email', $request->email)
+                ->where('is_used', false)
+                ->where('expires_at', '>', now())
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if (!$resetToken) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mã xác thực không hợp lệ hoặc đã hết hạn'
+                ], 400);
+            }
+
+            // Verify token
+            if (!Hash::check($request->token, $resetToken->token)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mã xác thực không chính xác'
+                ], 400);
+            }
+
+            // Tìm user và update password
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Người dùng không tồn tại'
+                ], 404);
+            }
+
+            // Cập nhật mật khẩu
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            // Đánh dấu token đã sử dụng
+            $resetToken->is_used = true;
+            $resetToken->save();
+
+            // Revoke tất cả refresh tokens của user
+            RefreshToken::where('user_id', $user->id)->update(['is_revoked' => true]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Tạo JWT Access Token
      */
-    private function createAccessToken(User $user)
-    {
-        $payload = [
-            'iss' => env('APP_URL'), // Issuer
-            'sub' => $user->id, // Subject (user ID)
-            'iat' => time(), // Issued at
-            'exp' => time() + (15 * 60), // Expiration (15 phút)
-            'email' => $user->email,
-            'role' => $user->role,
-        ];
-
-        return JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+   private function createAccessToken(User $user)
+{
+    $jwtSecret = env('JWT_SECRET');
+    
+    // Debug: Check if JWT_SECRET exists
+    if (empty($jwtSecret)) {
+        throw new \Exception('JWT_SECRET is not configured in .env file');
     }
+    
+    $payload = [
+        'iss' => env('APP_URL'),
+        'sub' => $user->id,
+        'iat' => time(),
+        'exp' => time() + (15 * 60),
+        'email' => $user->email,
+        'role' => $user->role,
+    ];
+
+    return JWT::encode($payload, $jwtSecret, 'HS256');
+}
 
     /**
      * Tạo Refresh Token

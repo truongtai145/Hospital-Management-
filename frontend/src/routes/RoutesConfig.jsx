@@ -5,6 +5,7 @@ import { PATHS } from "./path";
 const Home = lazy(() => import("../pages/Home"));
 const Login = lazy(() => import("../pages/auth/Login"));
 const Register = lazy(() => import("../pages/auth/Register"));
+const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const ServicePage = lazy(() => import("../pages/Services/ServicePage"));
 const Doctor = lazy(() => import("../pages/Doctor/DoctorPage"));
 const AboutPage = lazy(() => import("../pages/About/AboutPage"));
@@ -69,7 +70,11 @@ export const ROUTES_CONFIG = [
     element: Register,
     layout: "none",
   },
-
+{
+  path: PATHS.FORGOTPASSWORD,
+  element: ForgotPassword,
+  layout: "none",
+},
   // --- PUBLIC PAGES ---
   {
     path: PATHS.HOME,
