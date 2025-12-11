@@ -28,6 +28,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
     // Reset password
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])
         ->name('reset-password');
+    Route::post('/broadcasting/auth', [AuthController::class, 'pusherAuth']);
     
     // ===== PROTECTED ROUTES =====
     

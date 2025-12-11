@@ -428,4 +428,43 @@ class AuthController extends Controller
             'is_revoked' => false,
         ]);
     }
+     public function pusherAuth(Request $request)
+    {
+        try {
+            // Lấy token từ header
+            $token = $request->bearerToken();
+            
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            // Decode JWT
+            $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
+            $user = User::find($decoded->sub);
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 401);
+            }
+
+            // Set user vào request để Broadcast::auth có thể dùng
+            $request->setUserResolver(function () use ($user) {
+                return $user;
+            });
+
+            // Gọi Broadcast::auth
+            return \Illuminate\Support\Facades\Broadcast::auth($request);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication failed'
+            ], 401);
+        }
+    }
 }

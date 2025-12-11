@@ -48,11 +48,12 @@ class AdminPatientController extends Controller
     /**
      * Xem chi tiết bệnh nhân
      */
-    public function show($id)
-    {
+public function show($id)
+{
+    try {
         $patient = Patient::with('user')->findOrFail($id);
 
-        // Lấy lịch sử khám bệnh
+        // Kiểm tra xem model có relationship 'appointments' không
         $appointments = $patient->appointments()
             ->with(['doctor', 'department'])
             ->orderBy('appointment_time', 'desc')
@@ -70,7 +71,13 @@ class AdminPatientController extends Controller
                 ]
             ]
         ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Cập nhật thông tin bệnh nhân
@@ -149,4 +156,23 @@ class AdminPatientController extends Controller
             'data' => $stats
         ]);
     }
+    /**
+ * Chặn/Mở chặn bệnh nhân
+ */
+public function toggleBlock($id)
+{
+    $patient = Patient::findOrFail($id);
+    
+    // Assuming you have is_blocked column
+    $patient->is_blocked = !$patient->is_blocked;
+    $patient->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => $patient->is_blocked 
+            ? 'Đã chặn bệnh nhân!' 
+            : 'Đã mở chặn bệnh nhân!',
+        'data' => $patient
+    ]);
+}
 }

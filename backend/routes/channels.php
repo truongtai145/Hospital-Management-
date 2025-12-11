@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
+use App\Models\Conversation;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,4 +16,13 @@ use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
+});
+// Private channel cho mỗi conversation
+Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
+    // Kiểm tra user có trong conversation này không
+    $conversation = Conversation::whereHas('users', function($query) use ($user) {
+        $query->where('user_id', $user->id);
+    })->find($conversationId);
+    
+    return $conversation !== null;
 });

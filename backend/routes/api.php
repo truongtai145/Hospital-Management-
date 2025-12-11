@@ -35,3 +35,4 @@ require __DIR__.'/../routes/api/appointment.php';
 require __DIR__.'/../routes/api/admin.php';
 require __DIR__.'/../routes/api/payment.php';
 require __DIR__.'/../routes/api/paymentvnpay.php';
+require __DIR__.'/../routes/api/chat.php';

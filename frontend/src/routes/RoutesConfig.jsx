@@ -13,6 +13,7 @@ const ContactPage = lazy(() => import("../pages/Contact/ContactPage"));
 const NewsPage = lazy(() => import("../pages/Blog/BlogPage"));
 const SingleNewsPage = lazy(() => import("../pages/Blog/SingleNewsPage"));
 const PatientProfile = lazy(() => import("../pages/Patient/PatientProfile"));
+const Chat = lazy(() => import("../components/Chat/Chat"));
 const Appointment = lazy(() => import("../components/Appointment/Appointment"));
 const AdminDashboard = lazy(() =>
   import("../pages/Admin/AdminDashboard/AdminDashboard")
@@ -207,6 +208,10 @@ export const ROUTES_CONFIG = [
   layout:"none",
   isPrivate:true,
   roles:["admin"],
+ },
+ {
+  path: PATHS.CHAT,
+  element: Chat,
  },
 
   // --- DOCTOR DASHBOARD ---

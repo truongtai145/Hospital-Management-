@@ -46,6 +46,7 @@ Route::middleware(['jwt.auth', 'role:admin'])->prefix('admin')->group(function (
         Route::get('/{id}', [AdminPatientController::class, 'show']);
         Route::put('/{id}', [AdminPatientController::class, 'update']);
         Route::delete('/{id}', [AdminPatientController::class, 'destroy']);
+        Route::post('/{id}/toggle-block', [AdminPatientController::class, 'toggleBlock']);
     });
     
    

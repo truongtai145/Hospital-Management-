@@ -14,11 +14,13 @@ import {
   Loader,
   AlertCircle,
   CreditCard,
+  Edit,
+  Trash2,
+  Ban,
 } from "lucide-react";
 import AdminLayout from "../Components/AdminLayout";
 import { api } from "../../../api/axios";
 import { toast } from "react-toastify";
-import Pagination from "../../../components/Pagination/Pagination";
 
 const AdminPatientDetail = () => {
   const { id } = useParams();
@@ -28,6 +30,7 @@ const AdminPatientDetail = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     fetchPatientDetail();
@@ -52,6 +55,36 @@ const AdminPatientDetail = () => {
       toast.error(errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa bệnh nhân này? Hành động này không thể hoàn tác!")) {
+      return;
+    }
+
+    try {
+      const response = await api.delete(`/admin/patients/${id}`);
+      if (response.data.success) {
+        toast.success("Đã xóa bệnh nhân thành công!");
+        navigate("/admin/patients");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Không thể xóa bệnh nhân");
+    }
+  };
+
+  const handleBlockPatient = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn chặn bệnh nhân này?")) {
+      return;
+    }
+
+    try {
+      // Implement block functionality here
+      toast.info("Chức năng chặn bệnh nhân đang được phát triển");
+    // eslint-disable-next-line no-unused-vars
+    } catch (error) {
+      toast.error("Không thể chặn bệnh nhân");
     }
   };
 
@@ -108,19 +141,45 @@ const AdminPatientDetail = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
+        {/* Header with Actions */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <button
-            onClick={() => navigate("/admin/patients")}
-            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors mb-4"
-          >
-            <ArrowLeft size={20} />
-            <span>Quay lại</span>
-          </button>
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => navigate("/admin/patients")}
+              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              <ArrowLeft size={20} />
+              <span>Quay lại danh sách</span>
+            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
+              >
+                <Edit size={18} />
+                Chỉnh sửa
+              </button>
+              <button
+                onClick={handleBlockPatient}
+                className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition"
+              >
+                <Ban size={18} />
+                Chặn
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+              >
+                <Trash2 size={18} />
+                Xóa
+              </button>
+            </div>
+          </div>
 
           {/* Patient Header Info */}
           <div className="flex items-start gap-6">
-            <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold">
+            <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold flex-shrink-0">
               {patient.avatar_url ? (
                 <img
                   src={patient.avatar_url}
@@ -160,7 +219,7 @@ const AdminPatientDetail = () => {
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <Mail size={18} className="text-gray-400" />
-                  <span className="text-sm">
+                  <span className="text-sm truncate">
                     {patient.user?.email || "N/A"}
                   </span>
                 </div>
@@ -251,7 +310,7 @@ const AdminPatientDetail = () => {
                       <CreditCard size={16} />
                       Số BHYT
                     </p>
-                    <p className="text-gray-700 font-mono bg-green-50 px-3 py-2 rounded-lg">
+                    <p className="text-gray-700 font-mono bg-green-50 px-3 py-2 rounded-lg text-sm">
                       {patient.insurance_number}
                     </p>
                   </div>
@@ -305,11 +364,11 @@ const AdminPatientDetail = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <FileText className="text-blue-600" size={20} />
-                Lịch sử khám bệnh
+                Lịch sử khám bệnh ({appointments.length})
               </h3>
 
               {appointments.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[600px] overflow-y-auto">
                   {appointments.map((apt) => (
                     <AppointmentCard key={apt.id} appointment={apt} />
                   ))}
@@ -331,15 +390,15 @@ const AdminPatientDetail = () => {
 // eslint-disable-next-line no-unused-vars
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const colors = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    yellow: "bg-yellow-100 text-yellow-600",
+    blue: "bg-blue-100 text-blue-600 border-blue-200",
+    green: "bg-green-100 text-green-600 border-green-200",
+    yellow: "bg-yellow-100 text-yellow-600 border-yellow-200",
   };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${colors[color]}`}>
+        <div className={`p-3 rounded-lg border ${colors[color]}`}>
           <Icon size={24} />
         </div>
       </div>
@@ -358,10 +417,10 @@ const InfoRow = ({ label, value }) => (
 
 const AppointmentCard = ({ appointment }) => {
   const statusStyles = {
-    pending: "bg-yellow-100 text-yellow-700",
-    confirmed: "bg-blue-100 text-blue-700",
-    completed: "bg-green-100 text-green-700",
-    cancelled: "bg-red-100 text-red-700",
+    pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    confirmed: "bg-blue-100 text-blue-700 border-blue-200",
+    completed: "bg-green-100 text-green-700 border-green-200",
+    cancelled: "bg-red-100 text-red-700 border-red-200",
   };
 
   const statusLabels = {
@@ -372,7 +431,7 @@ const AppointmentCard = ({ appointment }) => {
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition hover:border-blue-300">
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="font-semibold text-gray-800">
@@ -397,7 +456,7 @@ const AppointmentCard = ({ appointment }) => {
           </p>
         </div>
         <span
-          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          className={`px-3 py-1 rounded-full text-xs font-semibold border ${
             statusStyles[appointment.status]
           }`}
         >
@@ -426,7 +485,7 @@ const AppointmentCard = ({ appointment }) => {
         {appointment.doctor_notes && (
           <div className="mt-2 pt-2 border-t border-gray-100">
             <p className="text-sm text-gray-500 mb-1">Ghi chú của bác sĩ:</p>
-            <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded">
+            <p className="text-sm text-gray-700 bg-blue-50 p-2 rounded border border-blue-200">
               {appointment.doctor_notes}
             </p>
           </div>
