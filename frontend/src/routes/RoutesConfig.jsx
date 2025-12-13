@@ -58,9 +58,9 @@ const AdminPatientDetail = lazy(() =>
 const PatientPayments = lazy(() => import("../pages/Patient/PatientPayments"));
 const AdminPayments = lazy(() => import("../pages/Admin/AdminDashboard/AdminPayments"));
 const PaymentResult = lazy(() => import("../pages/Patient/PaymentResult"));
+
 export const ROUTES_CONFIG = [
   // --- AUTH ---
- 
   {
     path: PATHS.LOGIN,
     element: Login,
@@ -71,11 +71,12 @@ export const ROUTES_CONFIG = [
     element: Register,
     layout: "none",
   },
-{
-  path: PATHS.FORGOTPASSWORD,
-  element: ForgotPassword,
-  layout: "none",
-},
+  {
+    path: PATHS.FORGOTPASSWORD,
+    element: ForgotPassword,
+    layout: "none",
+  },
+
   // --- PUBLIC PAGES ---
   {
     path: PATHS.HOME,
@@ -146,7 +147,7 @@ export const ROUTES_CONFIG = [
     roles: ["patient"],
   },
 
-  // --- ADMIN ---
+  // --- ADMIN ROUTES (FLAT STRUCTURE - NO NESTING) ---
   {
     path: PATHS.ADMIN,
     element: AdminDashboard,
@@ -167,18 +168,8 @@ export const ROUTES_CONFIG = [
     layout: "none",
     isPrivate: true,
     roles: ["admin"],
-    children: [
-      {
-        index: true,
-        element: AdminDoctors,
-      },
-      { 
-        path:PATHS.ADMIN_DOCTOR_DETAIL, 
-        element: AdminDoctorDetail, 
-      }
-    ],
   },
-  { 
+  {
     path: PATHS.ADMIN_DOCTOR_DETAIL,
     element: AdminDoctorDetail,
     layout: "none",
@@ -191,59 +182,50 @@ export const ROUTES_CONFIG = [
     layout: "none",
     isPrivate: true,
     roles: ["admin"],
-    children: [
-      {
-        index: true,
-        element: AdminPatients,
-      },
-      {
-        path:PATHS.ADMIN_PATIENT_DETAIL,
-        element: AdminPatientDetail,
-      }
-    ],
   },
- {
-  path:PATHS.ADMIN_PAYMENTS,
-  element:AdminPayments,
-  layout:"none",
-  isPrivate:true,
-  roles:["admin"],
- },
- {
-  path: PATHS.CHAT,
-  element: Chat,
- },
+  {
+    path: PATHS.ADMIN_PATIENT_DETAIL,
+    element: AdminPatientDetail,
+    layout: "none",
+    isPrivate: true,
+    roles: ["admin"],
+  },
+  {
+    path: PATHS.ADMIN_PAYMENTS,
+    element: AdminPayments,
+    layout: "none",
+    isPrivate: true,
+    roles: ["admin"],
+  },
+  {
+    path: PATHS.CHAT,
+    element: Chat,
+  },
 
-  // --- DOCTOR DASHBOARD ---
-  // Layout chính cho tất cả các routes doctor
+  // --- DOCTOR DASHBOARD (NESTED ROUTES - KEPT AS IS) ---
   {
     path: PATHS.DOCTOR_DASHBOARD,
-    element: DoctorLayout, // Layout bọc ngoài với sidebar
+    element: DoctorLayout,
     layout: "none",
     isPrivate: true,
     roles: ["doctor"],
     children: [
-      // Trang chủ dashboard - index route
       {
-        index: true, // Route mặc định khi vào /doctor-dashboard
+        index: true,
         element: DoctorDashboard,
       },
-      // Hồ sơ bác sĩ
       {
         path: PATHS.DOCTOR_PROFILE,
         element: DoctorProfile,
       },
-      // Danh sách lịch hẹn
       {
         path: PATHS.DOCTOR_APPOINTMENTS,
         element: DoctorAppointments,
       },
-      // Chi tiết lịch hẹn
       {
         path: PATHS.DOCTOR_APPOINTMENT_DETAIL,
         element: AppointmentDetail,
       },
-      // Danh sách bệnh nhân
       {
         path: PATHS.DOCTOR_PATIENTS,
         element: DoctorPatients,

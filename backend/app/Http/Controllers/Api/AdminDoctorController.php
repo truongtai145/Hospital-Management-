@@ -88,6 +88,7 @@ class AdminDoctorController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role' => 'doctor',
+                'is_active' => true,
             ]);
 
             // Create doctor profile
@@ -123,19 +124,29 @@ class AdminDoctorController extends Controller
     }
 
     /**
-     * Xem chi tiết bác sĩ
+     * Xem chi tiết bác sĩ - FIXED VERSION
      */
     public function show($id)
     {
+        // Load đầy đủ thông tin
         $doctor = Doctor::with(['department', 'user'])
             ->findOrFail($id);
 
-        // Lấy thống kê
+        // Lấy thống kê appointments
         $stats = [
-            'total_appointments' => $doctor->appointments()->count(),
-            'completed_appointments' => $doctor->appointments()->where('status', 'completed')->count(),
-            'pending_appointments' => $doctor->appointments()->where('status', 'pending')->count(),
+            'total_appointments' => 0,
+            'completed_appointments' => 0,
+            'pending_appointments' => 0,
         ];
+
+        // Nếu có relationship appointments
+        if (method_exists($doctor, 'appointments')) {
+            $stats = [
+                'total_appointments' => $doctor->appointments()->count(),
+                'completed_appointments' => $doctor->appointments()->where('status', 'completed')->count(),
+                'pending_appointments' => $doctor->appointments()->where('status', 'pending')->count(),
+            ];
+        }
 
         return response()->json([
             'success' => true,
