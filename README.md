@@ -67,7 +67,7 @@ Dự án được xây dựng theo mô hình **tách biệt Frontend – Backend
 
 ## 📂 Cấu trúc thư mục
 
-```bash
+
 hospital-management/
 ├── backend/        # Laravel Backend
 │   ├── app/
@@ -87,12 +87,7 @@ hospital-management/
 
 ---
 
-
----
-
-```md
 ## 🚀 Hướng dẫn cài đặt
-
 
 ### 🔧 Yêu cầu hệ thống
 - PHP >= 8.0
@@ -100,10 +95,10 @@ hospital-management/
 - Node.js >= 18
 - MySQL
 
-
+---
 ### 🔧 Cài đặt Backend (Laravel)
 
-```bash
+
 cd backend
 composer install
 cp .env.example .env
@@ -117,10 +112,9 @@ php artisan serve
 
 ---
 
-```md
 ### 🎨 Cài đặt Frontend (ReactJS)
 
-```bash
+
 cd frontend
 npm install
 npm run dev
