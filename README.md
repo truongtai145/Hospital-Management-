@@ -1,90 +1,81 @@
-🏥 Hospital Management System
+# 🏥 Hospital Management System
 
-Laravel (Backend) + ReactJS (Frontend)
+![Laravel](https://img.shields.io/badge/Laravel-10-red)
+![React](https://img.shields.io/badge/React-18-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-📌 Giới thiệu
+> Hệ thống quản lý bệnh viện mã nguồn mở được xây dựng bằng **Laravel (Backend)** và **ReactJS (Frontend)**.
 
-Hospital Management System là một hệ thống quản lý bệnh viện giúp số hóa các quy trình như quản lý bệnh nhân, bác sĩ, lịch hẹn, hồ sơ y tế và thanh toán.
-Dự án được xây dựng theo mô hình Frontend – Backend tách biệt, sử dụng Laravel để cung cấp API và ReactJS để xây dựng giao diện người dùng hiện đại.
+---
 
-⚙️ Công nghệ sử dụng
-🔹 Backend
+## 📖 Tổng quan
 
-PHP 8+
+**Hospital Management System** là một ứng dụng web giúp số hóa và tự động hóa các quy trình trong bệnh viện như quản lý bệnh nhân, bác sĩ, lịch hẹn, hồ sơ khám bệnh và thanh toán.
 
-Laravel 10+
+Dự án được xây dựng theo mô hình **tách biệt Frontend – Backend**, trong đó:
+- **Laravel** cung cấp RESTful API
+- **ReactJS** đảm nhiệm giao diện người dùng (SPA)
 
-MySQL
+---
 
-Laravel Sanctum / JWT (Authentication)
+## ✨ Chức năng chính
 
-RESTful API
+### 👤 Bệnh nhân
+- Đăng ký / đăng nhập
+- Đặt lịch khám bệnh
+- Xem lịch sử khám bệnh
+- Xem hóa đơn và trạng thái thanh toán
 
-🔹 Frontend
+### 🩺 Bác sĩ
+- Quản lý lịch làm việc
+- Xem danh sách lịch hẹn
+- Cập nhật hồ sơ khám bệnh
 
-ReactJS
+### 🗓️ Quản lý lịch hẹn
+- Tạo, cập nhật, hủy lịch hẹn
+- Theo dõi trạng thái lịch hẹn
+- Hỗ trợ tìm kiếm và phân trang
 
-React Router
+### 💳 Thanh toán
+- Tạo hóa đơn khám bệnh
+- Tích hợp thanh toán trực tuyến (VNPAY – sandbox)
+- Xem lịch sử thanh toán
 
-Axios
+### 🛠️ Quản trị viên
+- Quản lý người dùng và phân quyền
+- Quản lý bác sĩ, khoa, dịch vụ
+- Thống kê và báo cáo hệ thống
 
-Tailwind CSS / CSS
+---
 
-Lucide / FontAwesome Icons
+## 🛠️ Công nghệ sử dụng
 
-✨ Chức năng chính
-👤 Người dùng
+### Backend
+- PHP 8+
+- Laravel 10+
+- MySQL
+- RESTful API
+- Laravel Sanctum / JWT Authentication
 
-Đăng ký / Đăng nhập
+### Frontend
+- ReactJS
+- React Router
+- Axios
+- Tailwind CSS
 
-Quản lý thông tin cá nhân
+---
 
-Đặt lịch khám bệnh
+## 📂 Cấu trúc thư mục
 
-Xem lịch sử khám và hóa đơn
-
-🩺 Bác sĩ
-
-Quản lý lịch làm việc
-
-Xem danh sách bệnh nhân
-
-Cập nhật hồ sơ khám bệnh
-
-🗓️ Lịch hẹn
-
-Tạo, cập nhật, hủy lịch hẹn
-
-Phân trang và tìm kiếm
-
-Trạng thái lịch hẹn (Pending, Confirmed, Completed, Cancelled)
-
-💳 Thanh toán
-
-Tạo hóa đơn khám bệnh
-
-Thanh toán trực tuyến (VNPAY – sandbox)
-
-Xem chi tiết hóa đơn
-
-🛠️ Quản trị viên
-
-Quản lý người dùng & phân quyền
-
-Quản lý bác sĩ, khoa, dịch vụ
-
-Thống kê & báo cáo
-
-🗂️ Cấu trúc thư mục
+```bash
 hospital-management/
-│
-├── backend/              # Laravel Backend
+├── backend/        # Laravel Backend
 │   ├── app/
 │   ├── routes/
 │   ├── database/
 │   └── .env
 │
-├── frontend/             # ReactJS Frontend
+├── frontend/       # ReactJS Frontend
 │   ├── src/
 │   │   ├── components/
 │   │   ├── pages/
@@ -93,27 +84,3 @@ hospital-management/
 │   └── package.json
 │
 └── README.md
-
-🚀 Cài đặt & Chạy dự án
-🔧 Backend (Laravel)
-cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-
-
-API mặc định chạy tại:
-
-http://localhost:8000
-
-🎨 Frontend (ReactJS)
-cd frontend
-npm install
-npm run dev
-
-
-Ứng dụng chạy tại:
- 
-http://localhost:5173 
