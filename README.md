@@ -84,3 +84,36 @@ hospital-management/
 │   └── package.json
 │
 └── README.md
+🚀 Hướng dẫn cài đặt
+Yêu cầu hệ thống
+
+PHP >= 8.0
+
+Composer
+
+Node.js >= 18
+
+MySQL
+
+🔧 Cài đặt Backend (Laravel)
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+
+
+API Backend chạy tại:
+
+http://localhost:8000
+
+🎨 Cài đặt Frontend (ReactJS)
+cd frontend
+npm install
+npm run dev
+
+
+Frontend chạy tại:
+
+http://localhost:5173
