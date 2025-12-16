@@ -1,15 +1,20 @@
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
 
 window.Pusher = Pusher;
 
 let echoInstance = null;
 
+// Lấy env theo chuẩn Vite
+const API_URL = import.meta.env.VITE_API_URL;
+const PUSHER_KEY = import.meta.env.VITE_PUSHER_APP_KEY;
+const PUSHER_CLUSTER = import.meta.env.VITE_PUSHER_APP_CLUSTER || "mt1";
+
 export const initializeEcho = () => {
-  const token = localStorage.getItem('access_token');
-  
+  const token = localStorage.getItem("access_token");
+
   if (!token) {
-    console.warn('No access token found');
+    console.warn("No access token found for Echo");
     return null;
   }
 
@@ -17,20 +22,22 @@ export const initializeEcho = () => {
     return echoInstance;
   }
 
+  if (!API_URL || !PUSHER_KEY) {
+    console.error("Echo config missing VITE_API_URL or VITE_PUSHER_APP_KEY");
+    return null;
+  }
+
   echoInstance = new Echo({
-    broadcaster: 'pusher',
-    // eslint-disable-next-line no-undef
-    key: process.env.REACT_APP_PUSHER_APP_KEY,
-    // eslint-disable-next-line no-undef
-    cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
+    broadcaster: "pusher",
+    key: PUSHER_KEY,
+    cluster: PUSHER_CLUSTER,
     forceTLS: true,
     encrypted: true,
-    // eslint-disable-next-line no-undef
-    authEndpoint: `${process.env.REACT_APP_API_URL}/broadcasting/auth`,
+    authEndpoint: `${API_URL}/broadcasting/auth`,
     auth: {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: "application/json",
       },
     },
   });

@@ -318,23 +318,50 @@ class ChatController extends Controller
     }
 
     /**
-     * Kiểm tra quyền chat giữa 2 users
+     * Kiểm tra quyền chat giữa 2 users dựa trên mối quan hệ lịch hẹn:
+     * - Patient: chỉ chat với bác sĩ đã từng có lịch hẹn & Admin
+     * - Doctor: chỉ chat với bệnh nhân đã từng có lịch hẹn & Admin
+     * - Admin: chat với tất cả
      */
     private function canChat($user1, $user2)
     {
-        // Patient chỉ chat được với Doctor hoặc Admin
-        if ($user1->role === 'patient') {
-            return in_array($user2->role, ['doctor', 'admin']);
-        }
-
-        // Doctor chat được với Patient và Admin
-        if ($user1->role === 'doctor') {
-            return in_array($user2->role, ['patient', 'admin']);
-        }
-
         // Admin chat được với tất cả
         if ($user1->role === 'admin') {
             return true;
+        }
+
+        // Nếu đối tượng là admin thì ai cũng chat được với admin
+        if ($user2->role === 'admin') {
+            return in_array($user1->role, ['patient', 'doctor', 'admin']);
+        }
+
+        // Patient chỉ chat được với bác sĩ đã từng có lịch hẹn
+        if ($user1->role === 'patient' && $user2->role === 'doctor') {
+            $patient = $user1->patient;
+            $doctor  = $user2->doctor;
+
+            if (!$patient || !$doctor) {
+                return false;
+            }
+
+            // Kiểm tra xem có appointment nào giữa patient & doctor không
+            return \App\Models\Appointment::where('patient_id', $patient->id)
+                ->where('doctor_id', $doctor->id)
+                ->exists();
+        }
+
+        // Doctor chỉ chat được với bệnh nhân đã từng có lịch hẹn
+        if ($user1->role === 'doctor' && $user2->role === 'patient') {
+            $doctor  = $user1->doctor;
+            $patient = $user2->patient;
+
+            if (!$patient || !$doctor) {
+                return false;
+            }
+
+            return \App\Models\Appointment::where('patient_id', $patient->id)
+                ->where('doctor_id', $doctor->id)
+                ->exists();
         }
 
         return false;

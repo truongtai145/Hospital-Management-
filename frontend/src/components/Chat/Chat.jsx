@@ -21,45 +21,58 @@ export default function Chat() {
   const messagesEndRef = useRef(null);
   const echoRef = useRef(null);
 
-  // Load conversations khi component mount
+  // 🔥 FIX: Load conversations và auto select
   useEffect(() => {
-    loadConversations();
-
-    // Nếu có conversationId từ navigation state, auto select
-    if (location.state?.conversationId) {
-      const convId = location.state.conversationId;
-      // Đợi conversations load xong rồi mới select
-      setTimeout(() => {
+    const initChat = async () => {
+      await loadConversations();
+      
+      // Nếu có conversationId từ navigation
+      if (location.state?.conversationId) {
+        const convId = location.state.conversationId;
+        
+        // Tìm conversation và select
         const conv = conversations.find(c => c.id === convId);
         if (conv) {
           handleSelectConversation(conv);
+        } else {
+          // Nếu chưa có trong list, fetch lại
+          const res = await api.get("/chat/conversations");
+          const foundConv = res.data.conversations.find(c => c.id === convId);
+          if (foundConv) {
+            handleSelectConversation(foundConv);
+          }
         }
-      }, 500);
-    }
+      }
+    };
+
+    initChat();
     
     // Initialize Echo
     echoRef.current = getEcho();
 
     return () => {
-      // Cleanup: leave channels
       if (selectedConversation && echoRef.current) {
         echoRef.current.leave(`private-conversation.${selectedConversation.id}`);
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.state?.conversationId]);
 
-  // Subscribe to conversation channel khi chọn conversation
+  // 🔥 FIX: Subscribe to Echo channel - XÓA DẤU CHẤM Ở ĐẦU
   useEffect(() => {
     if (selectedConversation && echoRef.current) {
+      console.log(`🔊 Subscribing to conversation.${selectedConversation.id}`);
+      
       const channel = echoRef.current.private(`conversation.${selectedConversation.id}`);
       
-      channel.listen('.message.sent', (event) => {
-        console.log('New message received:', event);
+      // ❌ SAI: '.message.sent'
+      // ✅ ĐÚNG: 'message.sent' (không có dấu chấm đầu)
+      channel.listen('message.sent', (event) => {
+        console.log('📩 New message received:', event);
         
         // Thêm message mới vào danh sách
         setMessages(prev => [...prev, {
-          ...event,
+          ...event.message,
           is_mine: false
         }]);
 
@@ -70,8 +83,15 @@ export default function Chat() {
         scrollToBottom();
       });
 
+      // 🔥 Thêm error handling
+      channel.error((error) => {
+        console.error('❌ Echo channel error:', error);
+      });
+
       return () => {
-        channel.stopListening('.message.sent');
+        console.log(`🔇 Leaving conversation.${selectedConversation.id}`);
+        channel.stopListening('message.sent');
+        echoRef.current.leave(`private-conversation.${selectedConversation.id}`);
       };
     }
   }, [selectedConversation]);
@@ -88,9 +108,10 @@ export default function Chat() {
   const loadConversations = async () => {
     try {
       const res = await api.get("/chat/conversations");
+      console.log('📋 Loaded conversations:', res.data.conversations);
       setConversations(res.data.conversations);
     } catch (err) {
-      console.error("Error loading conversations:", err);
+      console.error("❌ Error loading conversations:", err);
       toast.error("Không thể tải danh sách trò chuyện");
     }
   };
@@ -99,9 +120,10 @@ export default function Chat() {
     setLoading(true);
     try {
       const res = await api.get(`/chat/conversations/${conversationId}/messages`);
+      console.log('💬 Loaded messages:', res.data.messages);
       setMessages(res.data.messages);
     } catch (err) {
-      console.error("Error loading messages:", err);
+      console.error("❌ Error loading messages:", err);
       toast.error("Không thể tải tin nhắn");
     } finally {
       setLoading(false);
@@ -109,15 +131,16 @@ export default function Chat() {
   };
 
   const handleSelectConversation = async (conversation) => {
+    console.log('👆 Selected conversation:', conversation);
     setSelectedConversation(conversation);
     await loadMessages(conversation.id);
     
     // Mark as read
     try {
       await api.post(`/chat/conversations/${conversation.id}/read`);
-      loadConversations(); // Refresh để cập nhật unread count
+      loadConversations();
     } catch (err) {
-      console.error("Error marking as read:", err);
+      console.error("❌ Error marking as read:", err);
     }
   };
 
@@ -133,6 +156,8 @@ export default function Chat() {
         { content: newMessage }
       );
 
+      console.log('✉️ Message sent:', res.data.message);
+
       // Thêm message vào UI
       setMessages(prev => [...prev, res.data.message]);
       setNewMessage("");
@@ -141,7 +166,7 @@ export default function Chat() {
       loadConversations();
 
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.error("❌ Error sending message:", err);
       toast.error("Không thể gửi tin nhắn");
     } finally {
       setSending(false);
@@ -153,7 +178,6 @@ export default function Chat() {
     const now = new Date();
     const diff = now - date;
     
-    // Nếu trong ngày hôm nay
     if (diff < 86400000) {
       return date.toLocaleTimeString('vi-VN', { 
         hour: '2-digit', 
@@ -161,7 +185,6 @@ export default function Chat() {
       });
     }
     
-    // Nếu trong tuần
     if (diff < 604800000) {
       return date.toLocaleDateString('vi-VN', { 
         weekday: 'short',
@@ -170,7 +193,6 @@ export default function Chat() {
       });
     }
     
-    // Ngày cũ hơn
     return date.toLocaleDateString('vi-VN', {
       day: '2-digit',
       month: '2-digit',
@@ -187,14 +209,12 @@ export default function Chat() {
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar - Danh sách conversations */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-3 mb-4">
             <MessageCircle className="w-8 h-8 text-primary" />
             <h1 className="text-xl font-bold text-gray-800">Tin nhắn</h1>
           </div>
 
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -207,7 +227,6 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Conversations List */}
         <div className="flex-1 overflow-y-auto">
           {filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
@@ -224,7 +243,6 @@ export default function Chat() {
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  {/* Avatar */}
                   <div className="relative">
                     {conv.other_user.avatar_url ? (
                       <img
@@ -244,7 +262,6 @@ export default function Chat() {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-semibold text-gray-800 truncate">
@@ -292,7 +309,6 @@ export default function Chat() {
       <div className="flex-1 flex flex-col">
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
             <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {selectedConversation.other_user.avatar_url ? (
@@ -324,7 +340,6 @@ export default function Chat() {
               </button>
             </div>
 
-            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
@@ -342,7 +357,6 @@ export default function Chat() {
                     className={`flex ${msg.is_mine ? "justify-end" : "justify-start"}`}
                   >
                     <div className={`flex gap-2 max-w-[70%] ${msg.is_mine ? "flex-row-reverse" : "flex-row"}`}>
-                      {/* Avatar */}
                       {!msg.is_mine && (
                         msg.user.avatar_url ? (
                           <img
@@ -357,7 +371,6 @@ export default function Chat() {
                         )
                       )}
 
-                      {/* Message Bubble */}
                       <div>
                         <div
                           className={`px-4 py-2 rounded-2xl ${
@@ -369,7 +382,6 @@ export default function Chat() {
                           <p className="text-sm break-words">{msg.content}</p>
                         </div>
                         
-                        {/* Time & Status */}
                         <div className={`flex items-center gap-1 mt-1 text-xs text-gray-500 ${
                           msg.is_mine ? "justify-end" : "justify-start"
                         }`}>
@@ -387,7 +399,6 @@ export default function Chat() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
             <form onSubmit={handleSendMessage} className="bg-white border-t border-gray-200 p-4">
               <div className="flex items-center gap-3">
                 <input

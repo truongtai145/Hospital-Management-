@@ -1,4 +1,5 @@
 <?php
+// File: 2025_06_12_09_create_conversations.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -10,8 +11,7 @@ return new class extends Migration
     {
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
-            // Bạn có thể thêm các cột khác nếu cần, ví dụ: tên cuộc trò chuyện
-            // $table->string('name')->nullable();
+            $table->string('name')->nullable()->comment('Tên cuộc trò chuyện (tùy chọn)');
             $table->timestamps();
         });
     }

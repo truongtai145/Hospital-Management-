@@ -1,4 +1,5 @@
 <?php
+// File: 2025_06_12_10_create_messages.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -15,6 +16,10 @@ return new class extends Migration
             $table->text('content');
             $table->timestamp('read_at')->nullable()->comment('Dấu thời gian khi tin nhắn được đọc');
             $table->timestamps();
+            
+            // Index để tối ưu query
+            $table->index(['conversation_id', 'created_at']);
+            $table->index(['user_id', 'read_at']);
         });
     }
 

@@ -1,9 +1,12 @@
 // src/components/common/FloatingContact.jsx
 
 import * as Popover from "@radix-ui/react-popover";
-import { PhoneCall, X } from "lucide-react";
+import { PhoneCall, X, MessageCircle } from "lucide-react";
 import { clsx } from "clsx";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../../api/axios";
+import { toast } from "react-toastify";
 
 // --- Icon Components (giữ nguyên) ---
 function FacebookIcon(props) {
@@ -34,6 +37,10 @@ export default function FloatingContact({
   hidden = false,
 }) {
   if (hidden) return null;
+
+  const navigate = useNavigate();
+  const [chatLoading, setChatLoading] = useState(false);
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const triggerStyle = useMemo(() => {
     const right = typeof rightOffset === "number" ? `${rightOffset}px` : rightOffset;
@@ -55,6 +62,41 @@ export default function FloatingContact({
       zIndex: 60,
     };
   }, [placement, rightOffset, bottomOffset]);
+
+  // ID tài khoản Admin dùng để hỗ trợ chat (tạo trong AdminSeeder)
+  const ADMIN_USER_ID = 1;
+
+  const handleSupportChat = async () => {
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+      toast.info("Vui lòng đăng nhập để sử dụng chat hỗ trợ.");
+      navigate("/login");
+      return;
+    }
+
+    setChatLoading(true);
+    try {
+      const res = await api.post("/chat/conversations", {
+        other_user_id: ADMIN_USER_ID,
+      });
+
+      const conversationId = res.data?.conversation?.id;
+      if (!conversationId) {
+        throw new Error("Không tìm thấy cuộc trò chuyện hỗ trợ.");
+      }
+
+      navigate("/chat", { state: { conversationId } });
+    } catch (error) {
+      console.error("Error starting support chat:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Không thể bắt đầu cuộc trò chuyện hỗ trợ."
+      );
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   return (
     <Popover.Root>
@@ -98,6 +140,28 @@ export default function FloatingContact({
 
           <div className="px-3 pb-3 pt-1">
             <ul className="space-y-2">
+              {/* Chat trực tuyến với Admin hỗ trợ */}
+              <li>
+                <button
+                  type="button"
+                  onClick={handleSupportChat}
+                  disabled={chatLoading}
+                  className="w-full flex items-center gap-3 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="grid h-9 w-9 place-content-center rounded-full bg-primary text-white">
+                    <MessageCircle className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 text-left">
+                    <div className="text-sm font-semibold">
+                      {chatLoading ? "Đang mở chat..." : "Chat trực tuyến"}
+                    </div>
+                    <div className="truncate text-xs text-neutral-600">
+                      Kết nối với bộ phận hỗ trợ / quản trị
+                    </div>
+                  </div>
+                </button>
+              </li>
+
               <li>
                 <a
                   href={`tel:${phone.replace(/\s/g, "")}`}

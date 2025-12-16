@@ -1,16 +1,86 @@
-# React + Vite
+# 🏥 Hospital Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Laravel](https://img.shields.io/badge/Laravel-10-red)
+![React](https://img.shields.io/badge/React-18-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Currently, two official plugins are available:
+> Hệ thống quản lý bệnh viện mã nguồn mở được xây dựng bằng **Laravel (Backend)** và **ReactJS (Frontend)**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 📖 Tổng quan
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Hospital Management System** là một ứng dụng web giúp số hóa và tự động hóa các quy trình trong bệnh viện như quản lý bệnh nhân, bác sĩ, lịch hẹn, hồ sơ khám bệnh và thanh toán.
 
-## Expanding the ESLint configuration
+Dự án được xây dựng theo mô hình **tách biệt Frontend – Backend**, trong đó:
+- **Laravel** cung cấp RESTful API
+- **ReactJS** đảm nhiệm giao diện người dùng (SPA)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## ✨ Chức năng chính
+
+### 👤 Bệnh nhân
+- Đăng ký / đăng nhập
+- Đặt lịch khám bệnh
+- Xem lịch sử khám bệnh
+- Xem hóa đơn và trạng thái thanh toán
+
+### 🩺 Bác sĩ
+- Quản lý lịch làm việc
+- Xem danh sách lịch hẹn
+- Cập nhật hồ sơ khám bệnh
+
+### 🗓️ Quản lý lịch hẹn
+- Tạo, cập nhật, hủy lịch hẹn
+- Theo dõi trạng thái lịch hẹn
+- Hỗ trợ tìm kiếm và phân trang
+
+### 💳 Thanh toán
+- Tạo hóa đơn khám bệnh
+- Tích hợp thanh toán trực tuyến (VNPAY – sandbox)
+- Xem lịch sử thanh toán
+
+### 🛠️ Quản trị viên
+- Quản lý người dùng và phân quyền
+- Quản lý bác sĩ, khoa, dịch vụ
+- Thống kê và báo cáo hệ thống
+
+---
+
+## 🛠️ Công nghệ sử dụng
+
+### Backend
+- PHP 8+
+- Laravel 10+
+- MySQL
+- RESTful API
+- Laravel Sanctum / JWT Authentication
+
+### Frontend
+- ReactJS
+- React Router
+- Axios
+- Tailwind CSS
+
+---
+
+## 📂 Cấu trúc thư mục
+
+```bash
+hospital-management/
+├── backend/        # Laravel Backend
+│   ├── app/
+│   ├── routes/
+│   ├── database/
+│   └── .env
+│
+├── frontend/       # ReactJS Frontend
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── api/
+│   │   └── App.jsx
+│   └── package.json
+│
+└── README.md

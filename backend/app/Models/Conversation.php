@@ -29,9 +29,9 @@ class Conversation extends Model
         return $this->hasMany(Message::class);
     }
 
-    /**
-     * Lấy tin nhắn mới nhất của cuộc trò chuyện (rất hữu ích để hiển thị preview).
-     */
+    
+    //  Lấy tin nhắn mới nhất của cuộc trò chuyện 
+     
     public function latestMessage()
     {
         return $this->hasOne(Message::class)->latest();

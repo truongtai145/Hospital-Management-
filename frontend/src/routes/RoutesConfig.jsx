@@ -200,6 +200,9 @@ export const ROUTES_CONFIG = [
   {
     path: PATHS.CHAT,
     element: Chat,
+    layout: "public", 
+    isPrivate: true,
+    roles: ["patient", "doctor", "admin"],
   },
 
   // --- DOCTOR DASHBOARD (NESTED ROUTES - KEPT AS IS) ---
