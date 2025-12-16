@@ -67,15 +67,15 @@ Dự án được xây dựng theo mô hình **tách biệt Frontend – Backend
 
 ## 📂 Cấu trúc thư mục
 
-
+```text
 hospital-management/
-├── backend/        # Laravel Backend
+├── backend/                 # Laravel Backend
 │   ├── app/
 │   ├── routes/
 │   ├── database/
 │   └── .env
 │
-├── frontend/       # ReactJS Frontend
+├── frontend/                # ReactJS Frontend
 │   ├── src/
 │   │   ├── components/
 │   │   ├── pages/
@@ -84,6 +84,7 @@ hospital-management/
 │   └── package.json
 │
 └── README.md
+```
 
 ---
 
@@ -98,14 +99,14 @@ hospital-management/
 ---
 ### 🔧 Cài đặt Backend (Laravel)
 
-
+```bash
 cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-
+- composer install
+- cp .env.example .env
+- php artisan key:generate
+- php artisan migrate --seed
+- php artisan serve
+```
 
 
 
@@ -114,13 +115,12 @@ php artisan serve
 
 ### 🎨 Cài đặt Frontend (ReactJS)
 
-
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
-
-
-Frontend chạy tại:
-http://localhost:5173
+Frontend chạy tại:  
+👉 http://localhost:5173
 
