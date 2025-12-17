@@ -349,23 +349,43 @@ class PaymentController extends Controller
      */
     public function getStatistics(Request $request)
     {
-        $query = Payment::query();
+        // Base query áp dụng filter ngày nếu có
+        $baseQuery = Payment::query();
 
         if ($request->has('start_date') && $request->has('end_date')) {
-            $query->whereBetween('created_at', [
+            $baseQuery->whereBetween('created_at', [
                 $request->start_date,
                 $request->end_date
             ]);
         }
 
+        // Dùng clone để không làm "bẩn" query gốc
         $stats = [
-            'total_revenue' => $query->where('status', 'completed')->sum('total_amount'),
-            'total_pending' => (clone $query)->where('status', 'pending')->sum('total_amount'),
-            'total_payments' => $query->count(),
-            'completed_payments' => (clone $query)->where('status', 'completed')->count(),
-            'pending_payments' => (clone $query)->where('status', 'pending')->count(),
-            'by_payment_method' => Payment::select('payment_method', DB::raw('count(*) as count'), DB::raw('sum(total_amount) as total'))
+            'total_revenue' => (clone $baseQuery)
                 ->where('status', 'completed')
+                ->sum('total_amount'),
+
+            'total_pending' => (clone $baseQuery)
+                ->where('status', 'pending')
+                ->sum('total_amount'),
+
+            'total_payments' => (clone $baseQuery)->count(),
+
+            'completed_payments' => (clone $baseQuery)
+                ->where('status', 'completed')
+                ->count(),
+
+            'pending_payments' => (clone $baseQuery)
+                ->where('status', 'pending')
+                ->count(),
+
+            'by_payment_method' => (clone $baseQuery)
+                ->where('status', 'completed')
+                ->select(
+                    'payment_method',
+                    DB::raw('count(*) as count'),
+                    DB::raw('sum(total_amount) as total')
+                )
                 ->groupBy('payment_method')
                 ->get(),
         ];

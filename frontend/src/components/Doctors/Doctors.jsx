@@ -14,7 +14,6 @@ import {
   Search,
   Filter
 } from 'lucide-react';
-import Banner from '../../components/Banner/Banner';
 import Pagination from '../Pagination/Pagination';
 
 /* =========================
@@ -118,7 +117,7 @@ const DoctorsPage = () => {
   const [error, setError] = useState(null);
 
   /* ===== PAGINATION STATE ===== */
-  const ITEMS_PER_PAGE = 6; // số bác sĩ mỗi trang
+  const ITEMS_PER_PAGE = 3; // số bác sĩ mỗi trang
   const [currentPage, setCurrentPage] = useState(1);
 
   /* =========================
@@ -213,7 +212,7 @@ const DoctorsPage = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      <Banner title="Đội ngũ Bác sĩ" breadcrumb="Trang chủ / Bác sĩ" />
+      
 
       {/* FILTER */}
       <section className="py-6 bg-white">
@@ -251,38 +250,16 @@ const DoctorsPage = () => {
           ))}
         </div>
 
-        {/* PAGINATION BUTTONS */}
-        <div className="flex justify-center items-center gap-3 mt-10">
-          <button
-            type="button"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={safeCurrentPage === 1}
-            className="px-3 py-2 rounded border bg-white disabled:opacity-50"
-          >
-            «
-          </button>
-
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
-            <button
-              key={page}
-              type="button"
-              onClick={() => setCurrentPage(page)}
-              className={`px 4 py-2 rounded border ${
-                safeCurrentPage === page ? 'bg-primary text-white' : 'bg-white hover:bg-gray-100'
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-
-          <button
-            type="button"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={safeCurrentPage === totalPages}
-            className="px-3 py-2 rounded border bg-white disabled:opacity-50"
-          >
-            »
-          </button>
+        {/* PAGINATION */}
+        <div className="mt-10">
+          <Pagination
+            currentPage={safeCurrentPage}
+            lastPage={totalPages}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         </div>
       </section>
     </div>

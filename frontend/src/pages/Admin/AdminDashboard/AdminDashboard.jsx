@@ -28,6 +28,16 @@ import { api } from '../../../api/axios';
 import { toast } from 'react-toastify';
 import Pagination from "../../../components/Pagination/Pagination";
 
+// Format currency VND chuẩn (giống AdminPayments.jsx)
+const formatCurrency = (value = 0) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+};
+
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
@@ -35,6 +45,13 @@ const AdminDashboard = () => {
   const [recentAppointments, setRecentAppointments] = useState([]);
   const [period, setPeriod] = useState('today'); // today, week, month
   const [error, setError] = useState(null);
+  const [paymentStats, setPaymentStats] = useState({
+    total_revenue: 0,
+    total_pending: 0,
+    total_payments: 0,
+    completed_payments: 0,
+    pending_payments: 0,
+  });
 
   useEffect(() => {
     fetchDashboardData();
@@ -46,12 +63,27 @@ const AdminDashboard = () => {
     setError(null);
     
     try {
-      // Fetch all dashboard data
-      const [statsRes, chartRes, appointmentsRes] = await Promise.all([
+      // Tạo danh sách requests (gộp cả payment stats khi period = 'today')
+      const requests = [
         api.get(`/admin/dashboard/stats?period=${period}`),
-        api.get(`/admin/dashboard/chart?period=${period === 'today' ? 'week' : 'month'}`),
+        api.get(`/admin/dashboard/chart?period=${period}`), // Sửa: dùng period thực tế
         api.get('/admin/dashboard/recent-appointments')
-      ]);
+      ];
+
+      // Thêm payment stats request nếu period = 'today'
+      if (period === 'today') {
+        const today = new Date();
+        const startDate = `${today.toISOString().slice(0, 10)} 00:00:00`;
+        const endDate = `${today.toISOString().slice(0, 10)} 23:59:59`;
+        const params = new URLSearchParams({ 
+          start_date: startDate, 
+          end_date: endDate 
+        });
+        requests.push(api.get(`/admin/payments/statistics/overview?${params}`));
+      }
+
+      // Fetch tất cả song song
+      const [statsRes, chartRes, appointmentsRes, ...paymentRes] = await Promise.all(requests);
 
       if (statsRes.data.success) {
         setStats(statsRes.data.data);
@@ -64,6 +96,11 @@ const AdminDashboard = () => {
       if (appointmentsRes.data.success) {
         setRecentAppointments(appointmentsRes.data.data);
       }
+
+      // Xử lý payment stats nếu có
+      if (period === 'today' && paymentRes[0]?.data?.success) {
+        setPaymentStats(paymentRes[0].data.data);
+      }
     } catch (error) {
       console.error('Fetch dashboard error:', error);
       const errorMsg = error.response?.data?.message || 'Không thể tải dữ liệu dashboard';
@@ -73,6 +110,7 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -117,12 +155,20 @@ const AdminDashboard = () => {
     },
     { 
       label: "Doanh thu ngày", 
-      value: stats?.revenue?.total ? `${(stats.revenue.total / 1000000).toFixed(1)}M VND` : "0 VND", 
-      desc: `Trung bình ${stats?.revenue?.average ? Math.round(stats.revenue.average / 1000) + 'k' : '0'}/lượt`, 
+      value: period === 'today' 
+        ? formatCurrency(paymentStats.total_revenue)
+        : (stats?.revenue?.total ? formatCurrency(stats.revenue.total) : formatCurrency(0)), 
+      desc: period === 'today'
+        ? `${paymentStats.completed_payments || 0} hóa đơn đã thanh toán`
+        : `Trung bình ${stats?.revenue?.average ? formatCurrency(stats.revenue.average) : formatCurrency(0)}/lượt`, 
       icon: DollarSign, 
       color: "bg-green-100 text-green-600",
-      trend: stats?.revenue?.trend >= 0 ? 'up' : 'down',
-      trendValue: Math.abs(stats?.revenue?.trend || 0)
+      trend: period === 'today' 
+        ? (paymentStats.total_revenue > 0 ? 'up' : 'down')
+        : (stats?.revenue?.trend >= 0 ? 'up' : 'down'),
+      trendValue: period === 'today'
+        ? paymentStats.completed_payments || 0
+        : Math.abs(stats?.revenue?.trend || 0)
     },
     { 
       label: "Bệnh nhân mới", 
@@ -217,39 +263,49 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Chart & Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* Chart */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          {/* Biểu đồ lượt khám */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-primary">
-                Biểu đồ lượt khám ({period === 'today' ? 'Tuần này' : 'Tháng này'})
+                Lượt khám ({period === 'today' ? 'Hôm nay' : period === 'week' ? 'Tuần này' : 'Tháng này'})
               </h2>
             </div>
             <div className="h-72 w-full">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ left: -20, right: 0, top: 0, bottom: 0 }}>
+                  <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="colorAppointments" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#1f2b6c" stopOpacity={0.2}/>
                         <stop offset="95%" stopColor="#1f2b6c" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
+                    <XAxis 
+                      dataKey="label" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#9ca3af', fontSize: period === 'today' ? 10 : 11}} 
+                      dy={10}
+                      angle={period === 'today' ? -45 : 0}
+                      textAnchor={period === 'today' ? 'end' : 'middle'}
+                      height={period === 'today' ? 60 : 30}
+                      interval={period === 'today' ? 1 : 0}
+                    />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 11}} />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', fontSize: '12px' }}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="value" 
                       stroke="#1f2b6c" 
-                      strokeWidth={3}
+                      strokeWidth={2}
                       fillOpacity={1} 
-                      fill="url(#colorValue)" 
+                      fill="url(#colorAppointments)" 
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -261,14 +317,64 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Biểu đồ doanh thu */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-bold text-primary mb-4">Truy cập nhanh</h2>
-            <div className="space-y-3">
-              <QuickLink to="/admin/appointments" icon={ClipboardList} title="Quản lý Lịch hẹn" desc="Duyệt đơn, xếp lịch" />
-              <QuickLink to="/admin/doctors" icon={Stethoscope} title="Quản lý Bác sĩ" desc="Thêm mới, lịch trực" />
-              <QuickLink to="/admin/patients" icon={Users} title="Hồ sơ Bệnh nhân" desc="Tra cứu bệnh án" />
-              <QuickLink to="/admin/chat" icon={MessageSquare} title="Tư vấn trực tuyến" desc="Trả lời tin nhắn" />
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold text-green-600">
+                Doanh thu ({period === 'today' ? 'Hôm nay' : period === 'week' ? 'Tuần này' : 'Tháng này'})
+              </h2>
+            </div>
+            <div className="h-72 w-full">
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="label" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#9ca3af', fontSize: period === 'today' ? 10 : 11}} 
+                      dy={10}
+                      angle={period === 'today' ? -45 : 0}
+                      textAnchor={period === 'today' ? 'end' : 'middle'}
+                      height={period === 'today' ? 60 : 30}
+                      interval={period === 'today' ? 1 : 0}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#9ca3af', fontSize: 11}} 
+                      tickFormatter={(value) => {
+                        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                        if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                        return value;
+                      }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', fontSize: '12px' }}
+                      formatter={(value) => formatCurrency(value)}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      fillOpacity={1} 
+                      fill="url(#colorRevenue)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  Không có dữ liệu
+                </div>
+              )}
             </div>
           </div>
         </div>

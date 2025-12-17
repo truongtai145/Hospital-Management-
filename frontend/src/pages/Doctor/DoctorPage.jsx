@@ -1,8 +1,5 @@
 import React from "react";
-import Banner from "../../components/Banner/Banner";
 import Contactinfo from "../../components/Contact/ContactInfo";
-import TestimonialSection from "../../components/About/TestimonialSection";
-import NewsSection from "../../components/About/NewsSection";
 import Doctors from "../../components/Doctors/Doctors";
 const Doctor = () => {
   return (
@@ -18,16 +15,9 @@ const Doctor = () => {
         >
           <div className="absolute inset-0 bg-primary/60"></div>
         </div>
-        <div className="container mx-auto px-10 relative z-10 text-white">
-          <p className="font-medium mb-2 uppercase tracking-wide text-sm opacity-90">
-            Trang chủ / Bác Sĩ
-          </p>
-          <h1 className="text-5xl font-serif font-bold">Về chúng tôi</h1>
-        </div>
+        
       </div>
       <Doctors />
-      <TestimonialSection />
-      <NewsSection />
       <Contactinfo />
     </div>
   );

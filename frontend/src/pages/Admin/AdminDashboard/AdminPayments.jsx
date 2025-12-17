@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, CheckCircle, X, Clock, Loader, Shield, ChevronLeft, ChevronRight } from 'lucide-react';
+import { DollarSign, CheckCircle, X, Clock, Loader, Shield } from 'lucide-react';
 import AdminLayout from '../Components/AdminLayout';
 import { api } from '../../../api/axios';
 import { toast } from 'react-toastify';
 import Pagination from '../../../components/Pagination/Pagination';
 
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+const formatCurrency = (value = 0) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
 };
 
 const formatDate = (dateString) => {
@@ -36,11 +41,23 @@ const AdminPayments = () => {
   const [filterStatus, setFilterStatus] = useState('processing');
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10); // YYYY-MM-DD
+  });
+  const [stats, setStats] = useState({
+    total_revenue: 0,
+    total_pending: 0,
+    total_payments: 0,
+    completed_payments: 0,
+    pending_payments: 0,
+  });
 
   useEffect(() => {
     fetchPayments();
+    fetchStatistics();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterStatus, currentPage]);
+  }, [filterStatus, currentPage, selectedDate]);
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -63,6 +80,26 @@ const AdminPayments = () => {
       toast.error('Không thể tải danh sách hóa đơn');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      // Tính start/end theo ngày chọn
+      const startDate = `${selectedDate} 00:00:00`;
+      const endDate = `${selectedDate} 23:59:59`;
+
+      const params = new URLSearchParams({
+        start_date: startDate,
+        end_date: endDate,
+      });
+
+      const response = await api.get(`/admin/payments/statistics/overview?${params}`);
+      if (response.data.success) {
+        setStats(response.data.data);
+      }
+    } catch (error) {
+      console.error('Fetch payment statistics error:', error);
     }
   };
 
@@ -102,21 +139,47 @@ const AdminPayments = () => {
           <p className="text-gray-500 text-sm mt-1">Xác nhận thanh toán và quản lý hóa đơn</p>
         </div>
 
-        {/* Filter */}
-        <div className="bg-white rounded-xl border p-4">
-          <select
-            value={filterStatus}
-            onChange={(e) => {
-              setFilterStatus(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="px-4 py-2 border rounded-lg"
-          >
-            <option value="all">Tất cả</option>
-            <option value="processing">Chờ xác nhận</option>
-            <option value="completed">Đã thanh toán</option>
-            <option value="pending">Chưa thanh toán</option>
-          </select>
+        {/* Filter + Doanh thu theo ngày */}
+        <div className="bg-white rounded-xl border p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600">Lọc trạng thái:</span>
+            <select
+              value={filterStatus}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 border rounded-lg"
+            >
+              <option value="all">Tất cả</option>
+              <option value="processing">Chờ xác nhận</option>
+              <option value="completed">Đã thanh toán</option>
+              <option value="pending">Chưa thanh toán</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Ngày:</span>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border rounded-lg text-sm"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-gray-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <DollarSign size={16} className="text-green-600" />
+              <span className="font-medium">Doanh thu ngày</span>
+              <span className="font-semibold text-green-700">
+                {formatCurrency(stats.total_revenue)}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Table */}
