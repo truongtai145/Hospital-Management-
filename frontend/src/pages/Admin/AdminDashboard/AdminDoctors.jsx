@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Trash2, Power, Loader, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, Power, Loader, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../Components/AdminLayout';
 import { api } from '../../../api/axios';
 import { toast } from 'react-toastify';
+import Pagination from '../../../components/Pagination/Pagination';
 
 const AdminDoctors = () => {
   const [doctors, setDoctors] = useState([]);
@@ -210,15 +211,12 @@ const AdminDoctors = () => {
 
 
   const goToPage = (page) => {
-    if (page >= 1 && page <= pagination.last_page) {
-      setPagination(prev => ({ ...prev, current_page: page }));
-    }
+    setPagination(prev => {
+      const safePage = Math.max(1, Math.min(prev.last_page, page));
+      return { ...prev, current_page: safePage };
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const goToFirstPage = () => goToPage(1);
-  const goToLastPage = () => goToPage(pagination.last_page);
-  const goToPreviousPage = () => goToPage(pagination.current_page - 1);
-  const goToNextPage = () => goToPage(pagination.current_page + 1);
 
   // Tính toán số item hiển thị
   const startItem = (pagination.current_page - 1) * pagination.per_page + 1;
@@ -318,78 +316,22 @@ const AdminDoctors = () => {
           </div>
         )}
 
-       
+
         {pagination.last_page > 1 && (
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               {/* Info */}
               <div className="text-sm text-gray-600">
-                Hiển thị <span className="font-semibold text-gray-900">{startItem}</span> đến 
-                <span className="font-semibold text-gray-900"> {endItem}</span> trong tổng số 
+                Hiển thị <span className="font-semibold text-gray-900">{startItem}</span> đến
+                <span className="font-semibold text-gray-900"> {endItem}</span> trong tổng số
                 <span className="font-semibold text-gray-900"> {pagination.total}</span> bác sĩ
               </div>
 
-              {/* Navigation */}
-              <div className="flex items-center gap-2">
-                {/* First */}
-                <button
-                  onClick={goToFirstPage}
-                  disabled={pagination.current_page === 1}
-                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  title="Trang đầu"
-                >
-                  <ChevronLeft size={16} className="inline" />
-                  <ChevronLeft size={16} className="inline -ml-2" />
-                </button>
-
-                {/* Previous */}
-                <button
-                  onClick={goToPreviousPage}
-                  disabled={pagination.current_page === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1"
-                >
-                  <ChevronLeft size={16} />
-                  Trước
-                </button>
-
-                {/* Page numbers */}
-                <div className="flex gap-1">
-                  {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => goToPage(page)}
-                      className={`min-w-[40px] px-3 py-2 rounded-lg font-medium transition ${
-                        page === pagination.current_page
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Next */}
-                <button
-                  onClick={goToNextPage}
-                  disabled={pagination.current_page === pagination.last_page}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1"
-                >
-                  Sau
-                  <ChevronRight size={16} />
-                </button>
-
-                {/* Last */}
-                <button
-                  onClick={goToLastPage}
-                  disabled={pagination.current_page === pagination.last_page}
-                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  title="Trang cuối"
-                >
-                  <ChevronRight size={16} className="inline" />
-                  <ChevronRight size={16} className="inline -ml-2" />
-                </button>
-              </div>
+              <Pagination
+                currentPage={pagination.current_page}
+                lastPage={pagination.last_page}
+                onPageChange={goToPage}
+              />
             </div>
           </div>
         )}

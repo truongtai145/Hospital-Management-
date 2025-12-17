@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import AdminLayout from '../Components/AdminLayout';
 import { api } from '../../../api/axios';
 import { toast } from 'react-toastify';
+import Pagination from '../../../components/Pagination/Pagination';
 
 const AdminPatients = () => {
   const [patients, setPatients] = useState([]);
@@ -23,10 +24,11 @@ const AdminPatients = () => {
     total: 0
   });
 
+  // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchPatients();
-    }, 300);
+    }, 500); // Đợi 500ms sau khi người dùng ngừng gõ
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,8 +62,6 @@ const AdminPatients = () => {
       console.error('Fetch patients error:', error);
       if (error.response?.status === 401) {
         toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-        // Redirect to login if needed
-        // navigate('/login');
       } else {
         toast.error(error.response?.data?.message || 'Không thể tải danh sách bệnh nhân');
       }
@@ -97,7 +97,10 @@ const AdminPatients = () => {
   };
 
   const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, current_page: newPage }));
+    setPagination(prev => {
+      const safePage = Math.max(1, Math.min(prev.last_page, newPage));
+      return { ...prev, current_page: safePage };
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -208,66 +211,11 @@ const AdminPatients = () => {
               <span className="font-semibold">{pagination.total}</span> bệnh nhân
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(1)}
-                disabled={pagination.current_page === 1}
-                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                Đầu
-              </button>
-              <button
-                onClick={() => handlePageChange(pagination.current_page - 1)}
-                disabled={pagination.current_page === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                Trước
-              </button>
-
-              <div className="flex items-center gap-2">
-                {[...Array(Math.min(5, pagination.last_page))].map((_, idx) => {
-                  let pageNum;
-                  if (pagination.last_page <= 5) {
-                    pageNum = idx + 1;
-                  } else if (pagination.current_page <= 3) {
-                    pageNum = idx + 1;
-                  } else if (pagination.current_page >= pagination.last_page - 2) {
-                    pageNum = pagination.last_page - 4 + idx;
-                  } else {
-                    pageNum = pagination.current_page - 2 + idx;
-                  }
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`w-10 h-10 rounded-lg transition ${
-                        pagination.current_page === pageNum
-                          ? 'bg-blue-600 text-white font-semibold'
-                          : 'border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(pagination.current_page + 1)}
-                disabled={pagination.current_page === pagination.last_page}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                Sau
-              </button>
-              <button
-                onClick={() => handlePageChange(pagination.last_page)}
-                disabled={pagination.current_page === pagination.last_page}
-                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                Cuối
-              </button>
-            </div>
+            <Pagination
+              currentPage={pagination.current_page}
+              lastPage={pagination.last_page}
+              onPageChange={handlePageChange}
+            />
           </div>
         )}
       </div>
@@ -275,10 +223,8 @@ const AdminPatients = () => {
   );
 };
 
-// Patient Card Component
 const PatientCard = ({ patient, calculateAge, onDelete }) => (
   <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition overflow-hidden">
-    {/* Header */}
     <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 text-white">
       <div className="flex items-center gap-3">
         <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-2xl font-bold flex-shrink-0">
@@ -299,7 +245,6 @@ const PatientCard = ({ patient, calculateAge, onDelete }) => (
       </div>
     </div>
 
-    {/* Body */}
     <div className="p-4 space-y-3">
       <div className="flex items-center gap-2 text-sm text-gray-600">
         <Calendar size={16} className="text-gray-400" />
@@ -337,7 +282,6 @@ const PatientCard = ({ patient, calculateAge, onDelete }) => (
         </div>
       )}
 
-      {/* Actions */}
       <div className="pt-3 border-t flex gap-2">
         <Link
           to={`/admin/patients/${patient.id}`}
