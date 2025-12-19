@@ -19,4 +19,12 @@ Route::prefix('chat')->middleware('jwt.auth')->group(function () {
     
     // Đánh dấu đã đọc
     Route::post('/conversations/{conversationId}/read', [ChatController::class, 'markAsRead']);
+    
+    // Tìm kiếm users để chat (Admin)
+    Route::get('/search/users', [ChatController::class, 'searchUsers'])
+        ->middleware('role:admin');
+    
+    // Tìm kiếm users để chat (Doctor)
+    Route::get('/search/users-for-doctor', [ChatController::class, 'searchUsersForDoctor'])
+        ->middleware('role:doctor');
 });

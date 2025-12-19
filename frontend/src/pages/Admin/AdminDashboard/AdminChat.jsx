@@ -4,7 +4,7 @@ import { api } from "../../../api/axios";
 import { getEcho } from "../../../utils/echo";
 import { 
   MessageCircle, Send, Search, Filter, 
-  Clock, CheckCheck, Loader, Shield, X 
+  Clock, CheckCheck, Loader, Shield, X, Plus, UserPlus
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -17,10 +17,14 @@ export default function AdminChat() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterRole, setFilterRole] = useState("all"); // all, patient, doctor
+  const [filterRole, setFilterRole] = useState("all");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   
   const messagesEndRef = useRef(null);
   const echoRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     const initChat = async () => {
@@ -53,14 +57,37 @@ export default function AdminChat() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.conversationId]);
 
+  // Search effect với debounce
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (searchTerm.trim().length > 0) {
+      searchTimeoutRef.current = setTimeout(() => {
+        searchUsers();
+      }, 500);
+    } else {
+      setShowSearchResults(false);
+      setSearchResults([]);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, filterRole]);
+
   useEffect(() => {
     if (selectedConversation && echoRef.current) {
-      console.log(`Admin subscribing to conversation.${selectedConversation.id}`);
+      console.log(`🔔 Admin subscribing to conversation.${selectedConversation.id}`);
       
       const channel = echoRef.current.private(`conversation.${selectedConversation.id}`);
       
       channel.listen('message.sent', (event) => {
-        console.log(' Admin received message:', event);
+        console.log('📩 Admin received message:', event);
         
         setMessages(prev => [...prev, {
           id: event.id,
@@ -77,11 +104,11 @@ export default function AdminChat() {
       });
 
       channel.error((error) => {
-        console.error(' Echo channel error:', error);
+        console.error('❌ Echo channel error:', error);
       });
 
       return () => {
-        console.log(` Admin leaving conversation.${selectedConversation.id}`);
+        console.log(`👋 Admin leaving conversation.${selectedConversation.id}`);
         channel.stopListening('message.sent');
         echoRef.current.leave(`private-conversation.${selectedConversation.id}`);
       };
@@ -99,11 +126,60 @@ export default function AdminChat() {
   const loadConversations = async () => {
     try {
       const res = await api.get("/chat/conversations");
-      console.log(' Admin loaded conversations:', res.data.conversations);
+      console.log('✅ Admin loaded conversations:', res.data.conversations);
       setConversations(res.data.conversations);
     } catch (err) {
-      console.error(" Error loading conversations:", err);
+      console.error("❌ Error loading conversations:", err);
       toast.error("Không thể tải danh sách trò chuyện");
+    }
+  };
+
+  const searchUsers = async () => {
+    setSearchLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search: searchTerm,
+        role: filterRole
+      });
+      
+      const res = await api.get(`/chat/search/users?${params}`);
+      setSearchResults(res.data.users);
+      setShowSearchResults(true);
+    } catch (err) {
+      console.error("❌ Error searching users:", err);
+      toast.error("Không thể tìm kiếm người dùng");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const startConversationWithUser = async (userId) => {
+    try {
+      const res = await api.post("/chat/conversations", {
+        other_user_id: userId
+      });
+      
+      if (res.data.success) {
+        await loadConversations();
+        
+        // Tìm conversation vừa tạo
+        const newConv = conversations.find(c => 
+          c.other_user.id === userId
+        ) || {
+          id: res.data.conversation.id,
+          other_user: res.data.conversation.other_user,
+          latest_message: null,
+          unread_count: 0,
+          updated_at: res.data.conversation.created_at
+        };
+        
+        handleSelectConversation(newConv);
+        setShowSearchResults(false);
+        setSearchTerm("");
+      }
+    } catch (err) {
+      console.error("❌ Error creating conversation:", err);
+      toast.error(err.response?.data?.message || "Không thể tạo cuộc trò chuyện");
     }
   };
 
@@ -111,10 +187,10 @@ export default function AdminChat() {
     setLoading(true);
     try {
       const res = await api.get(`/chat/conversations/${conversationId}/messages`);
-      console.log(' Admin loaded messages:', res.data.messages);
+      console.log('✅ Admin loaded messages:', res.data.messages);
       setMessages(res.data.messages);
     } catch (err) {
-      console.error(" Error loading messages:", err);
+      console.error("❌ Error loading messages:", err);
       toast.error("Không thể tải tin nhắn");
     } finally {
       setLoading(false);
@@ -122,7 +198,7 @@ export default function AdminChat() {
   };
 
   const handleSelectConversation = async (conversation) => {
-    console.log(' Admin selected conversation:', conversation);
+    console.log('👆 Admin selected conversation:', conversation);
     setSelectedConversation(conversation);
     await loadMessages(conversation.id);
     
@@ -130,7 +206,7 @@ export default function AdminChat() {
       await api.post(`/chat/conversations/${conversation.id}/read`);
       loadConversations();
     } catch (err) {
-      console.error(" Error marking as read:", err);
+      console.error("❌ Error marking as read:", err);
     }
   };
 
@@ -146,14 +222,14 @@ export default function AdminChat() {
         { content: newMessage }
       );
 
-      console.log(' Admin sent message:', res.data.message);
+      console.log('✅ Admin sent message:', res.data.message);
 
       setMessages(prev => [...prev, res.data.message]);
       setNewMessage("");
       loadConversations();
 
     } catch (err) {
-      console.error(" Error sending message:", err);
+      console.error("❌ Error sending message:", err);
       toast.error("Không thể gửi tin nhắn");
     } finally {
       setSending(false);
@@ -205,16 +281,15 @@ export default function AdminChat() {
     }
   };
 
+  // Filter conversations trong list (không phải search)
   const filteredConversations = conversations.filter(conv => {
-    const matchesSearch = conv.other_user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         conv.other_user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || conv.other_user.role === filterRole;
-    return matchesSearch && matchesRole;
+    return matchesRole;
   });
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-purple-50 to-pink-50">
-      {/* Sidebar - Danh sách conversations */}
+      {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-lg">
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-pink-600">
           <div className="flex items-center gap-3 mb-4">
@@ -233,12 +308,14 @@ export default function AdminChat() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm kiếm..."
+              placeholder="Tìm kiếm tất cả người dùng..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
+            {searchLoading && (
+              <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-purple-600" />
+            )}
           </div>
 
-          {/* Filter by role */}
           <div className="flex gap-2">
             <button
               onClick={() => setFilterRole('all')}
@@ -274,77 +351,140 @@ export default function AdminChat() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <MessageCircle className="w-16 h-16 mb-2" />
-              <p>Chưa có tin nhắn nào</p>
-            </div>
-          ) : (
-            filteredConversations.map((conv) => (
-              <div
-                key={conv.id}
-                onClick={() => handleSelectConversation(conv)}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-purple-50 transition-colors ${
-                  selectedConversation?.id === conv.id ? "bg-purple-100 border-l-4 border-purple-600" : ""
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="relative">
-                    {conv.other_user.avatar_url ? (
+          {/* Search Results */}
+          {showSearchResults && searchTerm.trim().length > 0 && (
+            <div className="border-b border-gray-200 bg-purple-50">
+              <div className="p-3 flex items-center justify-between">
+                <span className="text-sm font-semibold text-purple-700">
+                  Kết quả tìm kiếm ({searchResults.length})
+                </span>
+                <button 
+                  onClick={() => { setShowSearchResults(false); setSearchTerm(""); }}
+                  className="text-purple-600 hover:text-purple-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {searchResults.map((user) => (
+                <div
+                  key={user.id}
+                  onClick={() => startConversationWithUser(user.id)}
+                  className="p-3 border-b border-purple-100 cursor-pointer hover:bg-purple-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {user.avatar_url ? (
                       <img
-                        src={conv.other_user.avatar_url}
-                        alt={conv.other_user.full_name}
-                        className="w-12 h-12 rounded-full object-cover"
+                        src={user.avatar_url}
+                        alt={user.full_name}
+                        className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
-                      <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${
-                        conv.other_user.role === 'doctor' 
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${
+                        user.role === 'doctor' 
                           ? 'from-blue-400 to-blue-600' 
                           : 'from-green-400 to-green-600'
-                      } flex items-center justify-center text-white font-bold text-lg`}>
-                        {conv.other_user.full_name.charAt(0).toUpperCase()}
+                      } flex items-center justify-center text-white font-bold`}>
+                        {user.full_name.charAt(0).toUpperCase()}
                       </div>
                     )}
-                    {conv.unread_count > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {conv.unread_count}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-gray-800 truncate">
-                        {conv.other_user.full_name}
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm text-gray-800 truncate">
+                        {user.full_name}
                       </h3>
-                      <span className="text-xs text-gray-500">
-                        {conv.latest_message && formatTime(conv.latest_message.created_at)}
+                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                      <span className={`inline-block px-2 py-0.5 text-xs rounded-full mt-1 ${getRoleBadgeColor(user.role)}`}>
+                        {getRoleLabel(user.role)}
                       </span>
                     </div>
                     
-                    <div className="flex items-center gap-1">
-                      <p className={`text-sm truncate ${
-                        conv.unread_count > 0 ? "font-semibold text-gray-800" : "text-gray-500"
-                      }`}>
-                        {conv.latest_message ? (
-                          <>
-                            {conv.latest_message.is_mine && "Bạn: "}
-                            {conv.latest_message.content}
-                          </>
-                        ) : (
-                          "Chưa có tin nhắn"
-                        )}
-                      </p>
-                    </div>
-
-                    <span className={`inline-block px-2 py-0.5 text-xs rounded-full mt-1 ${getRoleBadgeColor(conv.other_user.role)}`}>
-                      {getRoleLabel(conv.other_user.role)}
-                    </span>
+                    <UserPlus className="w-5 h-5 text-purple-600" />
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+              
+              {searchResults.length === 0 && !searchLoading && (
+                <div className="p-4 text-center text-sm text-gray-500">
+                  Không tìm thấy kết quả
+                </div>
+              )}
+            </div>
           )}
+
+          {/* Existing Conversations */}
+          {!showSearchResults && filteredConversations.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 p-4">
+              <MessageCircle className="w-16 h-16 mb-2" />
+              <p className="text-center">Chưa có tin nhắn nào</p>
+              <p className="text-xs text-center mt-1">Tìm kiếm để bắt đầu trò chuyện</p>
+            </div>
+          )}
+          
+          {!showSearchResults && filteredConversations.map((conv) => (
+            <div
+              key={conv.id}
+              onClick={() => handleSelectConversation(conv)}
+              className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-purple-50 transition-colors ${
+                selectedConversation?.id === conv.id ? "bg-purple-100 border-l-4 border-purple-600" : ""
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="relative">
+                  {conv.other_user.avatar_url ? (
+                    <img
+                      src={conv.other_user.avatar_url}
+                      alt={conv.other_user.full_name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${
+                      conv.other_user.role === 'doctor' 
+                        ? 'from-blue-400 to-blue-600' 
+                        : 'from-green-400 to-green-600'
+                    } flex items-center justify-center text-white font-bold text-lg`}>
+                      {conv.other_user.full_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {conv.unread_count > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      {conv.unread_count}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-semibold text-gray-800 truncate">
+                      {conv.other_user.full_name}
+                    </h3>
+                    <span className="text-xs text-gray-500">
+                      {conv.latest_message && formatTime(conv.latest_message.created_at)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1">
+                    <p className={`text-sm truncate ${
+                      conv.unread_count > 0 ? "font-semibold text-gray-800" : "text-gray-500"
+                    }`}>
+                      {conv.latest_message ? (
+                        <>
+                          {conv.latest_message.is_mine && "Bạn: "}
+                          {conv.latest_message.content}
+                        </>
+                      ) : (
+                        "Chưa có tin nhắn"
+                      )}
+                    </p>
+                  </div>
+
+                  <span className={`inline-block px-2 py-0.5 text-xs rounded-full mt-1 ${getRoleBadgeColor(conv.other_user.role)}`}>
+                    {getRoleLabel(conv.other_user.role)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -483,7 +623,7 @@ export default function AdminChat() {
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <Shield className="w-24 h-24 mb-4 text-purple-300" />
             <h2 className="text-2xl font-semibold mb-2">Quản lý Tin nhắn</h2>
-            <p>Chọn một cuộc trò chuyện để bắt đầu hỗ trợ</p>
+            <p>Chọn một cuộc trò chuyện hoặc tìm kiếm người dùng mới</p>
           </div>
         )}
       </div>

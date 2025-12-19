@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import { api } from "../../../api/axios";
 import { getEcho } from "../../../utils/echo";
 import { 
-  MessageCircle, Send, Search, User, 
-  Clock, CheckCheck, Loader, Stethoscope 
+  MessageCircle, Send, Search, 
+  Clock, CheckCheck, Loader, Stethoscope, X, UserPlus
 } from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function DoctorChat() {
-  const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -17,31 +15,16 @@ export default function DoctorChat() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   
   const messagesEndRef = useRef(null);
   const echoRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const initChat = async () => {
-      await loadConversations();
-      
-      if (location.state?.conversationId) {
-        const convId = location.state.conversationId;
-        const conv = conversations.find(c => c.id === convId);
-        
-        if (conv) {
-          handleSelectConversation(conv);
-        } else {
-          const res = await api.get("/chat/conversations");
-          const foundConv = res.data.conversations.find(c => c.id === convId);
-          if (foundConv) {
-            handleSelectConversation(foundConv);
-          }
-        }
-      }
-    };
-
-    initChat();
+    loadConversations();
     echoRef.current = getEcho();
 
     return () => {
@@ -50,17 +33,35 @@ export default function DoctorChat() {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state?.conversationId]);
+  }, []);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (searchTerm.trim().length > 0) {
+      searchTimeoutRef.current = setTimeout(() => {
+        searchUsers();
+      }, 500);
+    } else {
+      setShowSearchResults(false);
+      setSearchResults([]);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   useEffect(() => {
     if (selectedConversation && echoRef.current) {
-      console.log(` Doctor subscribing to conversation.${selectedConversation.id}`);
-      
       const channel = echoRef.current.private(`conversation.${selectedConversation.id}`);
       
       channel.listen('message.sent', (event) => {
-        console.log(' Doctor received message:', event);
-        
         setMessages(prev => [...prev, {
           id: event.id,
           conversation_id: event.conversation_id,
@@ -75,12 +76,7 @@ export default function DoctorChat() {
         scrollToBottom();
       });
 
-      channel.error((error) => {
-        console.error(' Echo channel error:', error);
-      });
-
       return () => {
-        console.log(` Doctor leaving conversation.${selectedConversation.id}`);
         channel.stopListening('message.sent');
         echoRef.current.leave(`private-conversation.${selectedConversation.id}`);
       };
@@ -98,11 +94,54 @@ export default function DoctorChat() {
   const loadConversations = async () => {
     try {
       const res = await api.get("/chat/conversations");
-      console.log(' Doctor loaded conversations:', res.data.conversations);
       setConversations(res.data.conversations);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      console.error(" Error loading conversations:", err);
       toast.error("Không thể tải danh sách trò chuyện");
+    }
+  };
+
+  const searchUsers = async () => {
+    setSearchLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search: searchTerm
+      });
+      
+      const res = await api.get(`/chat/search/users-for-doctor?${params}`);
+      setSearchResults(res.data.users);
+      setShowSearchResults(true);
+    // eslint-disable-next-line no-unused-vars
+    } catch (err) {
+      toast.error("Không thể tìm kiếm người dùng");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const startConversationWithUser = async (userId) => {
+    try {
+      const res = await api.post("/chat/conversations", {
+        other_user_id: userId
+      });
+      
+      if (res.data.success) {
+        await loadConversations();
+        
+        const newConv = {
+          id: res.data.conversation.id,
+          other_user: res.data.conversation.other_user,
+          latest_message: null,
+          unread_count: 0,
+          updated_at: res.data.conversation.created_at
+        };
+        
+        handleSelectConversation(newConv);
+        setShowSearchResults(false);
+        setSearchTerm("");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Không thể tạo cuộc trò chuyện");
     }
   };
 
@@ -110,10 +149,9 @@ export default function DoctorChat() {
     setLoading(true);
     try {
       const res = await api.get(`/chat/conversations/${conversationId}/messages`);
-      console.log(' Doctor loaded messages:', res.data.messages);
       setMessages(res.data.messages);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      console.error(" Error loading messages:", err);
       toast.error("Không thể tải tin nhắn");
     } finally {
       setLoading(false);
@@ -121,7 +159,6 @@ export default function DoctorChat() {
   };
 
   const handleSelectConversation = async (conversation) => {
-    console.log('👆 Doctor selected conversation:', conversation);
     setSelectedConversation(conversation);
     await loadMessages(conversation.id);
     
@@ -129,7 +166,7 @@ export default function DoctorChat() {
       await api.post(`/chat/conversations/${conversation.id}/read`);
       loadConversations();
     } catch (err) {
-      console.error(" Error marking as read:", err);
+      console.error("Error marking as read:", err);
     }
   };
 
@@ -145,14 +182,12 @@ export default function DoctorChat() {
         { content: newMessage }
       );
 
-      console.log('Doctor sent message:', res.data.message);
-
       setMessages(prev => [...prev, res.data.message]);
       setNewMessage("");
       loadConversations();
 
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      console.error(" Error sending message:", err);
       toast.error("Không thể gửi tin nhắn");
     } finally {
       setSending(false);
@@ -186,14 +221,24 @@ export default function DoctorChat() {
     });
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.other_user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.other_user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getRoleBadgeColor = (role) => {
+    switch(role) {
+      case 'admin': return 'bg-purple-100 text-purple-700';
+      case 'patient': return 'bg-green-100 text-green-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const getRoleLabel = (role) => {
+    switch(role) {
+      case 'admin': return 'Quản trị';
+      case 'patient': return 'Bệnh nhân';
+      default: return role;
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Sidebar - Danh sách conversations */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-lg">
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600">
           <div className="flex items-center gap-3 mb-4">
@@ -212,84 +257,149 @@ export default function DoctorChat() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm kiếm bệnh nhân..."
+              placeholder="Tìm bệnh nhân, admin..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            {searchLoading && (
+              <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-blue-600" />
+            )}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <MessageCircle className="w-16 h-16 mb-2" />
-              <p>Chưa có tin nhắn nào</p>
-            </div>
-          ) : (
-            filteredConversations.map((conv) => (
-              <div
-                key={conv.id}
-                onClick={() => handleSelectConversation(conv)}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors ${
-                  selectedConversation?.id === conv.id ? "bg-blue-100 border-l-4 border-blue-600" : ""
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="relative">
-                    {conv.other_user.avatar_url ? (
+          {showSearchResults && searchTerm.trim().length > 0 && (
+            <div className="border-b border-gray-200 bg-blue-50">
+              <div className="p-3 flex items-center justify-between">
+                <span className="text-sm font-semibold text-blue-700">
+                  Kết quả tìm kiếm ({searchResults.length})
+                </span>
+                <button 
+                  onClick={() => { setShowSearchResults(false); setSearchTerm(""); }}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {searchResults.map((user) => (
+                <div
+                  key={user.id}
+                  onClick={() => startConversationWithUser(user.id)}
+                  className="p-3 border-b border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {user.avatar_url ? (
                       <img
-                        src={conv.other_user.avatar_url}
-                        alt={conv.other_user.full_name}
-                        className="w-12 h-12 rounded-full object-cover"
+                        src={user.avatar_url}
+                        alt={user.full_name}
+                        className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold text-lg">
-                        {conv.other_user.full_name.charAt(0).toUpperCase()}
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${
+                        user.role === 'admin' 
+                          ? 'from-purple-400 to-purple-600' 
+                          : 'from-green-400 to-green-600'
+                      } flex items-center justify-center text-white font-bold`}>
+                        {user.full_name.charAt(0).toUpperCase()}
                       </div>
                     )}
-                    {conv.unread_count > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {conv.unread_count}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-gray-800 truncate">
-                        {conv.other_user.full_name}
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm text-gray-800 truncate">
+                        {user.full_name}
                       </h3>
-                      <span className="text-xs text-gray-500">
-                        {conv.latest_message && formatTime(conv.latest_message.created_at)}
+                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                      <span className={`inline-block px-2 py-0.5 text-xs rounded-full mt-1 ${getRoleBadgeColor(user.role)}`}>
+                        {getRoleLabel(user.role)}
                       </span>
                     </div>
                     
-                    <div className="flex items-center gap-1">
-                      <p className={`text-sm truncate ${
-                        conv.unread_count > 0 ? "font-semibold text-gray-800" : "text-gray-500"
-                      }`}>
-                        {conv.latest_message ? (
-                          <>
-                            {conv.latest_message.is_mine && "Bạn: "}
-                            {conv.latest_message.content}
-                          </>
-                        ) : (
-                          "Chưa có tin nhắn"
-                        )}
-                      </p>
-                    </div>
-
-                    <span className="inline-block px-2 py-0.5 text-xs rounded-full mt-1 bg-green-100 text-green-700">
-                      {conv.other_user.role === 'patient' ? 'Bệnh nhân' : conv.other_user.role === 'admin' ? 'Quản trị' : 'Bác sĩ'}
-                    </span>
+                    <UserPlus className="w-5 h-5 text-blue-600" />
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+              
+              {searchResults.length === 0 && !searchLoading && (
+                <div className="p-4 text-center text-sm text-gray-500">
+                  Không tìm thấy kết quả
+                </div>
+              )}
+            </div>
           )}
+
+          {!showSearchResults && conversations.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 p-4">
+              <MessageCircle className="w-16 h-16 mb-2" />
+              <p className="text-center">Chưa có tin nhắn nào</p>
+              <p className="text-xs text-center mt-1">Tìm kiếm để bắt đầu trò chuyện</p>
+            </div>
+          )}
+          
+          {!showSearchResults && conversations.map((conv) => (
+            <div
+              key={conv.id}
+              onClick={() => handleSelectConversation(conv)}
+              className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors ${
+                selectedConversation?.id === conv.id ? "bg-blue-100 border-l-4 border-blue-600" : ""
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="relative">
+                  {conv.other_user.avatar_url ? (
+                    <img
+                      src={conv.other_user.avatar_url}
+                      alt={conv.other_user.full_name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${
+                      conv.other_user.role === 'admin'
+                        ? 'from-purple-400 to-purple-600'
+                        : 'from-green-400 to-green-600'
+                    } flex items-center justify-center text-white font-bold text-lg`}>
+                      {conv.other_user.full_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {conv.unread_count > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      {conv.unread_count}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-semibold text-gray-800 truncate">
+                      {conv.other_user.full_name}
+                    </h3>
+                    <span className="text-xs text-gray-500">
+                      {conv.latest_message && formatTime(conv.latest_message.created_at)}
+                    </span>
+                  </div>
+                  
+                  <p className={`text-sm truncate ${
+                    conv.unread_count > 0 ? "font-semibold text-gray-800" : "text-gray-500"
+                  }`}>
+                    {conv.latest_message ? (
+                      <>
+                        {conv.latest_message.is_mine && "Bạn: "}
+                        {conv.latest_message.content}
+                      </>
+                    ) : (
+                      "Chưa có tin nhắn"
+                    )}
+                  </p>
+
+                  <span className={`inline-block px-2 py-0.5 text-xs rounded-full mt-1 ${getRoleBadgeColor(conv.other_user.role)}`}>
+                    {getRoleLabel(conv.other_user.role)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {selectedConversation ? (
           <>
@@ -302,7 +412,11 @@ export default function DoctorChat() {
                     className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${
+                    selectedConversation.other_user.role === 'admin'
+                      ? 'from-purple-400 to-purple-600'
+                      : 'from-green-400 to-green-600'
+                  } flex items-center justify-center text-white font-bold`}>
                     {selectedConversation.other_user.full_name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -314,8 +428,8 @@ export default function DoctorChat() {
                     <span className="text-sm text-gray-500">
                       {selectedConversation.other_user.email}
                     </span>
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
-                      Bệnh nhân
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleBadgeColor(selectedConversation.other_user.role)}`}>
+                      {getRoleLabel(selectedConversation.other_user.role)}
                     </span>
                   </div>
                 </div>
@@ -347,7 +461,11 @@ export default function DoctorChat() {
                             className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-green-400 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          <div className={`w-8 h-8 rounded-full ${
+                            msg.user.role === 'admin' 
+                              ? 'bg-purple-400' 
+                              : 'bg-green-400'
+                          } flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
                             {msg.user.full_name.charAt(0).toUpperCase()}
                           </div>
                         )
@@ -381,18 +499,19 @@ export default function DoctorChat() {
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="bg-white border-t border-gray-200 p-4">
+            <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex items-center gap-3">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(e)}
                   placeholder="Nhập tin nhắn..."
                   className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={sending}
                 />
                 <button
-                  type="submit"
+                  onClick={handleSendMessage}
                   disabled={!newMessage.trim() || sending}
                   className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
@@ -403,13 +522,13 @@ export default function DoctorChat() {
                   )}
                 </button>
               </div>
-            </form>
+            </div>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <Stethoscope className="w-24 h-24 mb-4 text-blue-300" />
             <h2 className="text-2xl font-semibold mb-2">Chào mừng Bác sĩ</h2>
-            <p>Chọn một cuộc trò chuyện để bắt đầu tư vấn bệnh nhân</p>
+            <p>Chọn một cuộc trò chuyện hoặc tìm kiếm để bắt đầu</p>
           </div>
         )}
       </div>

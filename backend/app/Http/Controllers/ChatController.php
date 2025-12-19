@@ -361,9 +361,161 @@ class ChatController extends Controller
     return false;
 }
 
+  
+    
+    public function searchUsers(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $searchTerm = $request->input('search', '');
+            $role = $request->input('role', 'all'); // all, patient, doctor
+
+            // Admin có thể tìm tất cả users
+            if ($user->role !== 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không có quyền truy cập'
+                ], 403);
+            }
+
+            $query = User::where('id', '!=', $user->id)
+                ->where('is_active', true);
+
+            // Filter by role
+            if ($role !== 'all') {
+                $query->where('role', $role);
+            }
+
+            // Search
+            if ($searchTerm) {
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('email', 'like', "%{$searchTerm}%")
+                      ->orWhereHas('patient', function($subq) use ($searchTerm) {
+                          $subq->where('full_name', 'like', "%{$searchTerm}%")
+                               ->orWhere('phone', 'like', "%{$searchTerm}%");
+                      })
+                      ->orWhereHas('doctor', function($subq) use ($searchTerm) {
+                          $subq->where('full_name', 'like', "%{$searchTerm}%")
+                               ->orWhere('phone', 'like', "%{$searchTerm}%");
+                      })
+                      ->orWhereHas('adminProfile', function($subq) use ($searchTerm) {
+                          $subq->where('full_name', 'like', "%{$searchTerm}%");
+                      });
+                });
+            }
+
+            $users = $query->with(['patient', 'doctor', 'adminProfile'])
+                ->limit(20)
+                ->get()
+                ->map(function($u) {
+                    return [
+                        'id' => $u->id,
+                        'email' => $u->email,
+                        'role' => $u->role,
+                        'full_name' => $this->getUserFullName($u),
+                        'avatar_url' => $this->getUserAvatar($u),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'users' => $users
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi tìm kiếm: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
-     * Helper: Lấy full name từ user
+     * Tìm kiếm users để chat (cho Doctor)
+     * Chỉ tìm patients có lịch hẹn và admin
      */
+    public function searchUsersForDoctor(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $searchTerm = $request->input('search', '');
+
+            if ($user->role !== 'doctor') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không có quyền truy cập'
+                ], 403);
+            }
+
+            $doctor = $user->doctor;
+            if (!$doctor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy thông tin bác sĩ'
+                ], 404);
+            }
+
+            // Lấy danh sách patient IDs có lịch hẹn với doctor này
+            $patientIds = \App\Models\Appointment::where('doctor_id', $doctor->id)
+                ->distinct()
+                ->pluck('patient_id')
+                ->toArray();
+
+            $query = User::where('id', '!=', $user->id)
+                ->where('is_active', true)
+                ->where(function($q) use ($patientIds) {
+                    // Admin hoặc patients có lịch hẹn
+                    $q->where('role', 'admin')
+                      ->orWhere(function($subq) use ($patientIds) {
+                          $subq->where('role', 'patient')
+                               ->whereHas('patient', function($patientQuery) use ($patientIds) {
+                                   $patientQuery->whereIn('id', $patientIds);
+                               });
+                      });
+                });
+
+            // Search
+            if ($searchTerm) {
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('email', 'like', "%{$searchTerm}%")
+                      ->orWhereHas('patient', function($subq) use ($searchTerm) {
+                          $subq->where('full_name', 'like', "%{$searchTerm}%")
+                               ->orWhere('phone', 'like', "%{$searchTerm}%");
+                      })
+                      ->orWhereHas('adminProfile', function($subq) use ($searchTerm) {
+                          $subq->where('full_name', 'like', "%{$searchTerm}%");
+                      });
+                });
+            }
+
+            $users = $query->with(['patient', 'adminProfile'])
+                ->limit(20)
+                ->get()
+                ->map(function($u) {
+                    return [
+                        'id' => $u->id,
+                        'email' => $u->email,
+                        'role' => $u->role,
+                        'full_name' => $this->getUserFullName($u),
+                        'avatar_url' => $this->getUserAvatar($u),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'users' => $users
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi tìm kiếm: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+   
+
     private function getUserFullName($user)
     {
         if ($user->role === 'patient' && $user->patient) {
@@ -376,9 +528,6 @@ class ChatController extends Controller
         return $user->email;
     }
 
-    /**
-     * Helper: Lấy avatar từ user
-     */
     private function getUserAvatar($user)
     {
         if ($user->role === 'patient' && $user->patient) {
@@ -390,4 +539,5 @@ class ChatController extends Controller
         }
         return null;
     }
+
 }
