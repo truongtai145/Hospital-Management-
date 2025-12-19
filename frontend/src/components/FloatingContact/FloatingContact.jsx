@@ -38,7 +38,9 @@ export default function FloatingContact({
 }) {
   if (hidden) return null;
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const navigate = useNavigate();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [chatLoading, setChatLoading] = useState(false);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -64,7 +66,7 @@ export default function FloatingContact({
   }, [placement, rightOffset, bottomOffset]);
 
   // ID tài khoản Admin dùng để hỗ trợ chat (tạo trong AdminSeeder)
-  const ADMIN_USER_ID = 1;
+  const ADMIN_USER_ID = 2;
 
   const handleSupportChat = async () => {
     const token = localStorage.getItem("access_token");

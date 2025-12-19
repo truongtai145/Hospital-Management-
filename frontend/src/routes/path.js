@@ -35,6 +35,8 @@ export const PATHS = {
   ADMIN_PAYMENTS: "/admin/payments",
   FORGOTPASSWORD: "/forgot-password",
   CHAT: "/chat",
+  DOCTOR_CHAT: "/doctor-dashboard/chat",  
+  ADMIN_CHAT: "/admin/chat", 
   // --- SYSTEM ---
   NOT_FOUND: "*",
 };

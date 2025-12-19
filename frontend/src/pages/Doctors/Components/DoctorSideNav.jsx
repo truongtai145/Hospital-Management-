@@ -17,6 +17,7 @@ const DoctorSideNav = ({ doctorName, handleLogout }) => {
     { name: 'Hồ sơ cá nhân', path: '/doctor-dashboard/profile', icon: UserCircle },
     { name: 'Thông tin bệnh nhân', path: '/doctor-dashboard/patients', icon: Users },
     { name: 'Lịch hẹn khám', path: '/doctor-dashboard/appointments', icon: CalendarClock },
+    { name: 'Trò chuyện hỗ trợ', path: '/doctor-dashboard/chat', icon: CalendarClock },
   ];
 
   return (

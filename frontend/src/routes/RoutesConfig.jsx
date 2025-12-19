@@ -58,6 +58,12 @@ const AdminPatientDetail = lazy(() =>
 const PatientPayments = lazy(() => import("../pages/Patient/PatientPayments"));
 const AdminPayments = lazy(() => import("../pages/Admin/AdminDashboard/AdminPayments"));
 const PaymentResult = lazy(() => import("../pages/Patient/PaymentResult"));
+const DoctorChat = lazy(() =>
+  import("../pages/Doctors/DoctorDashboard/DoctorChat")
+);
+const AdminChat = lazy(() =>
+  import("../pages/Admin/AdminDashboard/AdminChat")
+);
 
 export const ROUTES_CONFIG = [
   // --- AUTH ---
@@ -146,7 +152,13 @@ export const ROUTES_CONFIG = [
     isPrivate: true,
     roles: ["patient"],
   },
-
+  {
+    path: PATHS.CHAT,
+    element: Chat,
+    layout: "public", 
+    isPrivate: true,
+    roles: ["patient", "doctor", "admin"],
+  },
   // --- ADMIN ROUTES (FLAT STRUCTURE - NO NESTING) ---
   {
     path: PATHS.ADMIN,
@@ -198,12 +210,13 @@ export const ROUTES_CONFIG = [
     roles: ["admin"],
   },
   {
-    path: PATHS.CHAT,
-    element: Chat,
-    layout: "public", 
+    path: PATHS.ADMIN_CHAT,
+    element: AdminChat,
+    layout: "none",
     isPrivate: true,
-    roles: ["patient", "doctor", "admin"],
+    roles: ["admin"],
   },
+
 
   // --- DOCTOR DASHBOARD (NESTED ROUTES - KEPT AS IS) ---
   {
@@ -232,6 +245,10 @@ export const ROUTES_CONFIG = [
       {
         path: PATHS.DOCTOR_PATIENTS,
         element: DoctorPatients,
+      },
+      {
+        path: PATHS.DOCTOR_CHAT,
+        element: DoctorChat,
       },
     ],
   },
