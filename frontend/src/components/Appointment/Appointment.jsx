@@ -199,11 +199,7 @@ const Appointment = () => {
       return { valid: false, message: 'Vui lòng chọn khung giờ khám.' };
     }
 
-    // Kiểm tra ngày không phải chủ nhật
-    /*const selectedDate = new Date(formData.appointment_date);
-    if (selectedDate.getDay() === 0) {
-      return { valid: false, message: 'Phòng khám không làm việc vào Chủ Nhật.' };
-    }*/
+    
 
     return { valid: true };
   };

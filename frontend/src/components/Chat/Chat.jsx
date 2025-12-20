@@ -21,7 +21,7 @@ export default function Chat() {
   const messagesEndRef = useRef(null);
   const echoRef = useRef(null);
 
-  // 🔥 FIX: Load conversations và auto select
+ 
   useEffect(() => {
     const initChat = async () => {
       await loadConversations();

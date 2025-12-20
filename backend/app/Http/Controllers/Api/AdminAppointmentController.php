@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminAppointmentController extends Controller
 {
-    /**
-     * Lấy danh sách tất cả lịch hẹn
-     */
+    
+      // Lấy  tất cả lịch hẹn
+     
     public function index(Request $request)
     {
       $query = Appointment::with(['patient', 'doctor.department']);
@@ -55,9 +55,7 @@ class AdminAppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Xem chi tiết lịch hẹn
-     */
+    // xem chi tiet lich
     public function show($id)
     {
         $appointment = Appointment::with(['patient', 'doctor.department'])
@@ -69,9 +67,8 @@ class AdminAppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Cập nhật lịch hẹn (Admin có full quyền)
-     */
+    // Cập nhật lịch hẹn (Admin có full quyền)
+     
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -99,9 +96,9 @@ class AdminAppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Xóa lịch hẹn
-     */
+    // Xóa lịch hẹn
+     
+     
     public function destroy($id)
     {
         $appointment = Appointment::findOrFail($id);
@@ -113,9 +110,7 @@ class AdminAppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Bulk update status
-     */
+    // Cập nhật trạng thái hàng loạt
     public function bulkUpdateStatus(Request $request)
     {
         $validator = Validator::make($request->all(), [

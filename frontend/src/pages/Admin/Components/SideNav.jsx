@@ -22,7 +22,7 @@ const SideNav = ({ handleLogout }) => {
     { name: 'Bệnh nhân', path: '/admin/patients', icon: Users },  
     { name: 'Quản lý thanh toán', path: '/admin/payments', icon: ClipboardList },  
     { name: 'Chat', path: '/admin/chat', icon: MessageSquare },
-    { name: 'Đánh giá', path: '/admin/reviews', icon: Star },
+    //{ name: 'Đánh giá', path: '/admin/reviews', icon: Star },
   ];
 
   return (

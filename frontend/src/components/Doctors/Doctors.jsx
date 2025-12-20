@@ -16,9 +16,7 @@ import {
 } from 'lucide-react';
 import Pagination from '../Pagination/Pagination';
 
-/* =========================
-   Doctor Card Component
-========================= */
+
 const DoctorCard = ({ doctor }) => {
   if (!doctor) return null;
 
@@ -102,9 +100,7 @@ const DoctorCard = ({ doctor }) => {
   );
 };
 
-/* =========================
-   Doctors Page
-========================= */
+
 const DoctorsPage = () => {
   const [doctors, setDoctors] = useState([]);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
@@ -116,13 +112,11 @@ const DoctorsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  /* ===== PAGINATION STATE ===== */
+
   const ITEMS_PER_PAGE = 3; // số bác sĩ mỗi trang
   const [currentPage, setCurrentPage] = useState(1);
 
-  /* =========================
-     FETCH DATA
-  ========================= */
+
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -154,9 +148,7 @@ const DoctorsPage = () => {
     fetchDoctors();
   }, []);
 
-  /* =========================
-     FILTER + SEARCH
-  ========================= */
+ 
   useEffect(() => {
     let result = doctors;
 
@@ -176,12 +168,10 @@ const DoctorsPage = () => {
     }
 
     setFilteredDoctors(result);
-    setCurrentPage(1); // 👈 reset trang khi filter/search
+    setCurrentPage(1); //  reset trang khi filter/search
   }, [selectedDepartment, searchTerm, doctors]);
 
-  /* =========================
-     PAGINATION LOGIC
-  ========================= */
+ 
   const totalPages = Math.max(1, Math.ceil(filteredDoctors.length / ITEMS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
@@ -190,9 +180,7 @@ const DoctorsPage = () => {
 
   const paginatedDoctors = filteredDoctors.slice(startIndex, endIndex);
 
-  /* =========================
-     RENDER
-  ========================= */
+
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">

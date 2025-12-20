@@ -8,7 +8,7 @@ Route::middleware(['jwt.auth'])->group(function () {
    
     Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
 
-    // NHÓM API DÀNH CHO BỆNH NHÂN
+    // NHÓM API  CHO BỆNH NHÂN
     Route::middleware(['role:patient'])->group(function () {
         // Lấy danh sách lịch hẹn của chính bệnh nhân đó
         Route::get('/patient/appointments', [AppointmentController::class, 'index'])->name('patient.appointments.index');

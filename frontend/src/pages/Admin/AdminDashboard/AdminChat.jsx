@@ -82,12 +82,12 @@ export default function AdminChat() {
 
   useEffect(() => {
     if (selectedConversation && echoRef.current) {
-      console.log(`🔔 Admin subscribing to conversation.${selectedConversation.id}`);
+      console.log(` Admin subscribing to conversation.${selectedConversation.id}`);
       
       const channel = echoRef.current.private(`conversation.${selectedConversation.id}`);
       
       channel.listen('message.sent', (event) => {
-        console.log('📩 Admin received message:', event);
+        console.log('Admin received message:', event);
         
         setMessages(prev => [...prev, {
           id: event.id,
@@ -104,11 +104,11 @@ export default function AdminChat() {
       });
 
       channel.error((error) => {
-        console.error('❌ Echo channel error:', error);
+        console.error('Echo channel error:', error);
       });
 
       return () => {
-        console.log(`👋 Admin leaving conversation.${selectedConversation.id}`);
+        console.log(` Admin leaving conversation.${selectedConversation.id}`);
         channel.stopListening('message.sent');
         echoRef.current.leave(`private-conversation.${selectedConversation.id}`);
       };
@@ -126,10 +126,10 @@ export default function AdminChat() {
   const loadConversations = async () => {
     try {
       const res = await api.get("/chat/conversations");
-      console.log('✅ Admin loaded conversations:', res.data.conversations);
+      console.log(' Admin loaded conversations:', res.data.conversations);
       setConversations(res.data.conversations);
     } catch (err) {
-      console.error("❌ Error loading conversations:", err);
+      console.error(" Error loading conversations:", err);
       toast.error("Không thể tải danh sách trò chuyện");
     }
   };
@@ -146,7 +146,7 @@ export default function AdminChat() {
       setSearchResults(res.data.users);
       setShowSearchResults(true);
     } catch (err) {
-      console.error("❌ Error searching users:", err);
+      console.error(" Error searching users:", err);
       toast.error("Không thể tìm kiếm người dùng");
     } finally {
       setSearchLoading(false);
@@ -178,7 +178,7 @@ export default function AdminChat() {
         setSearchTerm("");
       }
     } catch (err) {
-      console.error("❌ Error creating conversation:", err);
+      console.error(" Error creating conversation:", err);
       toast.error(err.response?.data?.message || "Không thể tạo cuộc trò chuyện");
     }
   };
@@ -187,10 +187,10 @@ export default function AdminChat() {
     setLoading(true);
     try {
       const res = await api.get(`/chat/conversations/${conversationId}/messages`);
-      console.log('✅ Admin loaded messages:', res.data.messages);
+      console.log('Admin loaded messages:', res.data.messages);
       setMessages(res.data.messages);
     } catch (err) {
-      console.error("❌ Error loading messages:", err);
+      console.error(" Error loading messages:", err);
       toast.error("Không thể tải tin nhắn");
     } finally {
       setLoading(false);
@@ -198,7 +198,7 @@ export default function AdminChat() {
   };
 
   const handleSelectConversation = async (conversation) => {
-    console.log('👆 Admin selected conversation:', conversation);
+    console.log(' Admin selected conversation:', conversation);
     setSelectedConversation(conversation);
     await loadMessages(conversation.id);
     
@@ -206,7 +206,7 @@ export default function AdminChat() {
       await api.post(`/chat/conversations/${conversation.id}/read`);
       loadConversations();
     } catch (err) {
-      console.error("❌ Error marking as read:", err);
+      console.error(" Error marking as read:", err);
     }
   };
 
@@ -222,14 +222,14 @@ export default function AdminChat() {
         { content: newMessage }
       );
 
-      console.log('✅ Admin sent message:', res.data.message);
+      console.log(' Admin sent message:', res.data.message);
 
       setMessages(prev => [...prev, res.data.message]);
       setNewMessage("");
       loadConversations();
 
     } catch (err) {
-      console.error("❌ Error sending message:", err);
+      console.error(" Error sending message:", err);
       toast.error("Không thể gửi tin nhắn");
     } finally {
       setSending(false);

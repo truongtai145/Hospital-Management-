@@ -99,11 +99,11 @@ const AdminPaymentModal = ({ isOpen, onClose, appointment, onSuccess }) => {
     };
     
     try {
-      console.log('Sending payment request:', payload); // Debug log
+      console.log('Sending payment request:', payload); 
       
       const response = await api.post('/admin/payments/create-or-update', payload);
       
-      console.log('Payment response:', response.data); // Debug log
+      console.log('Payment response:', response.data); 
 
       if (response.data.success) {
         toast.success(response.data.message);
@@ -111,7 +111,7 @@ const AdminPaymentModal = ({ isOpen, onClose, appointment, onSuccess }) => {
         onClose();
       }
     } catch (error) {
-      console.error('Payment error:', error.response || error); // Debug log
+      console.error('Payment error:', error.response || error); 
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
       setLoading(false);

@@ -65,8 +65,8 @@ export default function FloatingContact({
     };
   }, [placement, rightOffset, bottomOffset]);
 
-  // ID tài khoản Admin dùng để hỗ trợ chat (tạo trong AdminSeeder)
-  const ADMIN_USER_ID = 2;
+
+  const ADMIN_USER_ID = 2;//id admin trong seeder
 
   const handleSupportChat = async () => {
     const token = localStorage.getItem("access_token");

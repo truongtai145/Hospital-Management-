@@ -34,16 +34,15 @@ const DoctorLayout = () => {
 
   return (
     <div className="flex bg-slate-50 min-h-screen">
-      {/* Sidenav (Sidebar) */}
+     
       <DoctorSidenav 
         doctorName={doctorInfo.profile?.full_name} 
         handleLogout={handleLogout} 
       />
 
-      {/* Main Content Area */}
+     
       <div className="flex-1 ml-64">
-        {/* Header (nếu có, ví dụ: thanh tìm kiếm, thông báo) */}
-        {/* <div className="p-4 bg-white border-b">Header Content</div> */}
+      
 
         <main className="p-8">
           {/* Render DoctorDashboard mặc định khi ở /doctor-dashboard, hoặc <Outlet /> cho nested routes */}

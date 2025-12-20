@@ -4,10 +4,7 @@ import { api } from "../../api/axios";
 import { MessageCircle } from "lucide-react";
 import { toast } from "react-toastify";
 
-/**
- * Button để bắt đầu chat với Doctor hoặc Admin
- * Dùng cho Patient khi xem profile Doctor hoặc muốn liên hệ Admin
- */
+
 // eslint-disable-next-line no-unused-vars
 export default function StartChatButton({ userId, userRole, userName }) {
   const navigate = useNavigate();

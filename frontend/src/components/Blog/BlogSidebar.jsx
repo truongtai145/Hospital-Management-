@@ -38,7 +38,7 @@ const BlogSidebar = () => {
       },
   ];
 
-  // Dữ liệu mẫu Danh mục (Chuyên khoa/Chủ đề)
+ 
   const categories = [
     { name: "Phẫu thuật & Chỉnh hình", count: 3 },
     { name: "Chăm sóc sức khỏe", count: 15 },
