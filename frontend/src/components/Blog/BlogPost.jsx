@@ -17,7 +17,7 @@ const BlogPost = ({ id, img, date, author, views, likes, title, desc }) => {
         </Link>
       </div>
 
-      {/* (Ngày, Tác giả...) */}
+  
       <div className="flex flex-wrap items-center gap-6 text-gray-500 text-sm mb-4">
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-secondary" />
@@ -37,7 +37,7 @@ const BlogPost = ({ id, img, date, author, views, likes, title, desc }) => {
         </div>
       </div>
 
-      {/* 3. Tiêu đề - Bọc thẻ Link */}
+     
       <Link to={`/news/${id}`}>
         <h3 className="text-3xl font-serif text-primary font-bold mb-4 hover:text-secondary transition-colors cursor-pointer">
           {title}

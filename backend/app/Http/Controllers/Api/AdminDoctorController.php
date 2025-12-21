@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
 use App\Models\User;
+use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
@@ -125,36 +126,46 @@ class AdminDoctorController extends Controller
 
     /**
      * Xem chi tiết bác sĩ - FIXED VERSION
+     * Query trực tiếp từ bảng appointments để đảm bảo dữ liệu chính xác
      */
     public function show($id)
     {
-        // Load đầy đủ thông tin
-        $doctor = Doctor::with(['department', 'user'])
-            ->findOrFail($id);
+        try {
+            // Load đầy đủ thông tin doctor
+            $doctor = Doctor::with(['department', 'user'])
+                ->findOrFail($id);
 
-        // Lấy thống kê appointments
-        $stats = [
-            'total_appointments' => 0,
-            'completed_appointments' => 0,
-            'pending_appointments' => 0,
-        ];
-
-        // Nếu có relationship appointments
-        if (method_exists($doctor, 'appointments')) {
+            // ✅ FIX: Query trực tiếp từ bảng appointments
+            // Đảm bảo lấy dữ liệu chính xác từ database
             $stats = [
-                'total_appointments' => $doctor->appointments()->count(),
-                'completed_appointments' => $doctor->appointments()->where('status', 'completed')->count(),
-                'pending_appointments' => $doctor->appointments()->where('status', 'pending')->count(),
+                'total_appointments' => Appointment::where('doctor_id', $id)->count(),
+                
+                'completed_appointments' => Appointment::where('doctor_id', $id)
+                    ->where('status', 'completed')
+                    ->count(),
+                
+                'pending_appointments' => Appointment::where('doctor_id', $id)
+                    ->whereIn('status', ['pending', 'confirmed'])
+                    ->count(),
+                
+                'cancelled_appointments' => Appointment::where('doctor_id', $id)
+                    ->where('status', 'cancelled')
+                    ->count(),
             ];
-        }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'doctor' => $doctor,
-                'stats' => $stats
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'doctor' => $doctor,
+                    'stats' => $stats
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

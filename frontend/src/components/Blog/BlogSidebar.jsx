@@ -49,7 +49,7 @@ const BlogSidebar = () => {
 
   return (
     <div className="w-full">
-      {/* 1. Hộp tìm kiếm */}
+      
       <div className="bg-primary p-8 rounded-lg mb-8 flex flex-col gap-2">
          <h3 className="text-white font-serif text-2xl mb-2">Tìm kiếm</h3>
          <div className="relative">
@@ -64,7 +64,7 @@ const BlogSidebar = () => {
          </div>
       </div>
 
-      {/* 2. Bài viết mới nhất */}
+      
       <SidebarWidget title="Bài viết mới">
         <div className="space-y-6">
           {recentPosts.map((post, idx) => (
@@ -85,7 +85,7 @@ const BlogSidebar = () => {
         </div>
       </SidebarWidget>
 
-      {/* 3. Danh mục */}
+     
       <SidebarWidget title="Danh mục">
         <ul className="space-y-4">
           {categories.map((cat, idx) => (
