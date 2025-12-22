@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 
-// Widget bao ngoài giữ nguyên cấu trúc
+
 const SidebarWidget = ({ title, children }) => (
   <div className="border border-gray-200 rounded-lg overflow-hidden mb-8">
     <div className="bg-primary text-white p-4 text-xl font-serif font-bold">
@@ -14,7 +14,7 @@ const SidebarWidget = ({ title, children }) => (
 );
 
 const BlogSidebar = () => {
-  // Dữ liệu mẫu Bài viết gần đây 
+  
   const recentPosts = [
     {
       img: "https://images.unsplash.com/photo-1551076805-e1869033e561?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80",

@@ -10,7 +10,7 @@ const WelcomeSection = () => {
   return (
     <section className="py-20 container mx-auto px-4 max-w-7xl">
       <div className="flex flex-col lg:flex-row items-center gap-12">
-        {/* Cột Ảnh */}
+       
         <div className="lg:w-1/2">
           <img 
             src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" 
@@ -19,7 +19,7 @@ const WelcomeSection = () => {
           />
         </div>
 
-        {/* Cột Nội dung */}
+     
         <div className="lg:w-1/2 space-y-6">
           <p className="text-secondary font-bold uppercase tracking-widest text-sm">Chào mừng đến với Meddical</p>
           <h2 className="text-4xl md:text-5xl text-primary font-serif font-bold leading-tight">

@@ -30,12 +30,12 @@ const NewsSection = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Cột trái */}
+            {/*  trái */}
             <div className="space-y-6">
                 <NewsCard image="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" />
                 <NewsCard image="https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" />
             </div>
-            {/* Cột phải */}
+            {/*  phải */}
             <div className="space-y-6">
                 <NewsCard image="https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" />
                 <NewsCard image="https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" />

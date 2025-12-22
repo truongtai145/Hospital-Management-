@@ -270,14 +270,14 @@ const Appointment = () => {
                   <li>• <strong>Nghỉ trưa:</strong> 11:00 - 13:00</li>
                   <li>• <strong>Ca chiều:</strong> 13:00 - 20:00</li>
                   <li>• <strong>Thời gian khám:</strong> 30 phút/ca</li>
-                 { /* <li className="text-red-600 font-medium">• Nghỉ Chủ Nhật</li> */}
+               
                 </ul>
               </div>
             </div>
 
             <div className="lg:w-3/5 bg-primary p-10">
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/* GRID - Thông tin cơ bản */}
+                {/*  Thông tin cơ bản */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormInput icon={<User />} label="Họ và tên *" name="full_name" value={formData.full_name} onChange={handleChange} required />
                   <select name="gender" value={formData.gender} onChange={handleChange} required className="appointment-select pt-6">
@@ -289,7 +289,7 @@ const Appointment = () => {
                   <FormInput icon={<Phone />} label="Số điện thoại *" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
                 </div>
 
-                {/* Chọn khoa và bác sĩ */}
+                {/* Chọn khoa, bác sĩ */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <select name="department_id" value={formData.department_id} onChange={handleChange} required className="appointment-select pt-6">
                     <option value="">-- Chọn khoa * --</option>
@@ -364,7 +364,7 @@ const Appointment = () => {
         </div>
       </section>
 
-      {/* MODAL */}
+      {/* hiển thị chi tiết lịch hẹn sau khi đặt lịch */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Đặt lịch thành công!">
         {appointmentDetails && (
           <div className="space-y-5">

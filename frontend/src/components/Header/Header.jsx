@@ -43,7 +43,7 @@ const Header = () => {
     <header className="w-full bg-white font-sans sticky top-0 z-[999] shadow-md">
 
       {/* Top Header Info */}
-      <div className="hidden md:flex justify-between items-center py-5 container mx-auto max-w-7xl px-10">
+      <div className="hidden md:flex justify-between items-center py-2 container mx-auto max-w-7xl px-10">
         <Link
           to="/"
           className="text-3xl font-bold text-primary uppercase tracking-wider hover:opacity-70 transition"
@@ -79,7 +79,7 @@ const Header = () => {
       {/* Navigation */}
       <nav className="bg-primary text-white shadow-lg">
 
-        <div className="container mx-auto max-w-7xl px-10 py-4 flex justify-between items-center">
+        <div className="container mx-auto max-w-7xl px-10 py-2 flex justify-between items-center">
           <ul className="flex gap-8 lg:gap-12 font-medium text-base lg:text-lg">
             <NavLink to="/" label="Trang chủ" />
             <NavLink to="/about" label="Giới thiệu" />

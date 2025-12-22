@@ -168,7 +168,7 @@ const DoctorsPage = () => {
     }
 
     setFilteredDoctors(result);
-    setCurrentPage(1); //  reset trang khi filter/search
+    setCurrentPage(1); 
   }, [selectedDepartment, searchTerm, doctors]);
 
  
@@ -238,7 +238,7 @@ const DoctorsPage = () => {
           ))}
         </div>
 
-        {/* PAGINATION */}
+    
         <div className="mt-10">
           <Pagination
             currentPage={safeCurrentPage}

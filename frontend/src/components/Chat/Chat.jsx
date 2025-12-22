@@ -76,8 +76,6 @@ export default function Chat() {
 
         // Cập nhật conversation list
         loadConversations();
-
-        // Auto scroll to bottom
         scrollToBottom();
       });
 
@@ -133,7 +131,7 @@ export default function Chat() {
     setSelectedConversation(conversation);
     await loadMessages(conversation.id);
     
-    // Mark as read
+
     try {
       await api.post(`/chat/conversations/${conversation.id}/read`);
       loadConversations();

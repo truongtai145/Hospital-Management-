@@ -47,8 +47,6 @@ const BlogPost = ({ id, img, date, author, views, likes, title, desc }) => {
       <p className="text-gray-500 leading-relaxed mb-6 text-justify">
         {desc}
       </p>
-
-     
       <Link 
         to={`/news/${id}`} 
         className="inline-flex items-center gap-2 bg-blue-100 text-primary px-6 py-3 rounded-full font-medium hover:bg-secondary hover:text-white transition-all"
