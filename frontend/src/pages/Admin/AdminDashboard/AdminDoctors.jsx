@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Eye, Edit, Trash2, Power, Loader, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../Components/AdminLayout';
@@ -11,6 +11,7 @@ const AdminDoctors = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(''); // Thêm debounced state
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [filterAvailable, setFilterAvailable] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -18,12 +19,11 @@ const AdminDoctors = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [stats, setStats] = useState({ total: 0, available: 0, unavailable: 0 });
   
-  
   const [pagination, setPagination] = useState({ 
     current_page: 1, 
     last_page: 1, 
     total: 0,
-    per_page: 3 // 
+    per_page: 3
   });
 
   const [formData, setFormData] = useState({
@@ -42,20 +42,34 @@ const AdminDoctors = () => {
     is_available: true,
   });
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // Chờ 500ms sau khi user ngừng gõ
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch doctors với debounced search term
   useEffect(() => {
     fetchDoctors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, filterDepartment, filterAvailable, pagination.current_page]);
+
+  // Fetch departments và statistics chỉ 1 lần khi mount
+  useEffect(() => {
     fetchDepartments();
     fetchStatistics();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, filterDepartment, filterAvailable, pagination.current_page]);
+  }, []);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: pagination.current_page,
-        per_page: pagination.per_page, // 
-        ...(searchTerm && { search: searchTerm }),
+        per_page: pagination.per_page,
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
         ...(filterDepartment !== 'all' && { department_id: filterDepartment }),
         ...(filterAvailable !== 'all' && { is_available: filterAvailable }),
       });
@@ -72,11 +86,15 @@ const AdminDoctors = () => {
         }));
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Không thể tải danh sách bác sĩ');
+      if (error.response?.status === 429) {
+        toast.error('Bạn đang gửi request quá nhanh, vui lòng đợi một chút');
+      } else {
+        toast.error(error.response?.data?.message || 'Không thể tải danh sách bác sĩ');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearchTerm, filterDepartment, filterAvailable, pagination.current_page, pagination.per_page]);
 
   const fetchDepartments = async () => {
     try {
@@ -86,6 +104,9 @@ const AdminDoctors = () => {
       }
     } catch (error) {
       console.error('Fetch departments error:', error);
+      if (error.response?.status !== 429) {
+        toast.error('Không thể tải danh sách khoa');
+      }
     }
   };
 
@@ -97,6 +118,9 @@ const AdminDoctors = () => {
       }
     } catch (error) {
       console.error('Fetch statistics error:', error);
+      if (error.response?.status !== 429) {
+        toast.error('Không thể tải thống kê');
+      }
     }
   };
 
@@ -209,7 +233,6 @@ const AdminDoctors = () => {
     setSelectedDoctor(null);
   };
 
-
   const goToPage = (page) => {
     setPagination(prev => {
       const safePage = Math.max(1, Math.min(prev.last_page, page));
@@ -218,7 +241,6 @@ const AdminDoctors = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Tính toán số item hiển thị
   const startItem = (pagination.current_page - 1) * pagination.per_page + 1;
   const endItem = Math.min(pagination.current_page * pagination.per_page, pagination.total);
 
@@ -272,6 +294,9 @@ const AdminDoctors = () => {
                 placeholder="Tìm kiếm bác sĩ..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
+              {loading && searchTerm !== debouncedSearchTerm && (
+                <Loader className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" size={16} />
+              )}
             </div>
 
             <select
@@ -316,11 +341,9 @@ const AdminDoctors = () => {
           </div>
         )}
 
-
         {pagination.last_page > 1 && (
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              {/* Info */}
               <div className="text-sm text-gray-600">
                 Hiển thị <span className="font-semibold text-gray-900">{startItem}</span> đến
                 <span className="font-semibold text-gray-900"> {endItem}</span> trong tổng số
@@ -444,7 +467,6 @@ const DoctorCard = ({ doctor, onEdit, onDelete, onToggleAvailability }) => (
     </div>
   </div>
 );
-
 
 const DoctorFormModal = ({ title, formData, departments, onChange, onSubmit, onClose, isEdit }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -647,7 +669,6 @@ const DoctorFormModal = ({ title, formData, departments, onChange, onSubmit, onC
     </div>
   </div>
 );
-
 
 const StatCard = ({ label, value, color }) => {
   const colors = {

@@ -66,7 +66,7 @@ const AdminDashboard = () => {
       // Tạo danh sách requests (gộp cả payment stats khi period = 'today')
       const requests = [
         api.get(`/admin/dashboard/stats?period=${period}`),
-        api.get(`/admin/dashboard/chart?period=${period}`), // Sửa: dùng period thực tế
+        api.get(`/admin/dashboard/chart?period=${period}`),
         api.get('/admin/dashboard/recent-appointments')
       ];
 
@@ -103,6 +103,7 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Fetch dashboard error:', error);
+      // Axios interceptor đã xử lý 401, chỉ cần hiển thị lỗi khác
       const errorMsg = error.response?.data?.message || 'Không thể tải dữ liệu dashboard';
       setError(errorMsg);
       toast.error(errorMsg);
@@ -266,14 +267,15 @@ const AdminDashboard = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* Biểu đồ lượt khám */}
+          {/* Biểu đồ lượt khám - FIX: Thêm min-height và aspect-ratio */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-primary">
                 Lượt khám ({period === 'today' ? 'Hôm nay' : period === 'week' ? 'Tuần này' : 'Tháng này'})
               </h2>
             </div>
-            <div className="h-72 w-full">
+            {/* FIX: Thêm style inline để đảm bảo height */}
+            <div style={{ width: '100%', height: '288px', minHeight: '288px' }}>
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
@@ -317,14 +319,15 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Biểu đồ doanh thu */}
+          {/* Biểu đồ doanh thu - FIX: Thêm min-height và aspect-ratio */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-green-600">
                 Doanh thu ({period === 'today' ? 'Hôm nay' : period === 'week' ? 'Tuần này' : 'Tháng này'})
               </h2>
             </div>
-            <div className="h-72 w-full">
+            {/* FIX: Thêm style inline để đảm bảo height */}
+            <div style={{ width: '100%', height: '288px', minHeight: '288px' }}>
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>

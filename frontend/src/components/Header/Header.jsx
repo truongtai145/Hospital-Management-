@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Button from "../Button/Button";
-import { Phone, Clock, MapPin, Search, User, LogOut, ChevronDown, FileText } from "lucide-react";
+import { Phone, Clock, MapPin, Search, User, LogOut, ChevronDown, FileText,CreditCard } from "lucide-react";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -90,7 +90,7 @@ const Header = () => {
           </ul>
 
           <div className="flex items-center gap-4 lg:gap-6">
-            <Search className="w-6 h-6 cursor-pointer hover:text-secondary transition duration-300" />
+           {/* <Search className="w-6 h-6 cursor-pointer hover:text-secondary transition duration-300" /> */}
 
             <Link to="/appointment">
               <Button
@@ -101,7 +101,7 @@ const Header = () => {
               </Button>
             </Link>
 
-            {/* USER LOGIN DROPDOWN */}
+         
             {user ? (
               <div className="relative group">
                 {/* Avatar + Greeting */}
@@ -155,6 +155,14 @@ const Header = () => {
                       className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition"
                     >
                       <FileText size={16} className="text-secondary" /> Lịch khám
+                    </Link>
+                  )}
+                   {user.role === "patient" && (
+                    <Link
+                      to="/patient/payments"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition"
+                    >
+                      <CreditCard size={16} className="text-secondary" /> Thanh toán
                     </Link>
                   )}
 

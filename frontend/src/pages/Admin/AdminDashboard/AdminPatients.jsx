@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Eye, Trash2, User, Phone, Calendar, Heart, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../Components/AdminLayout';
@@ -10,6 +10,7 @@ const AdminPatients = () => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterGender, setFilterGender] = useState('all');
   const [stats, setStats] = useState({
     total: 0,
@@ -21,30 +22,37 @@ const AdminPatients = () => {
   const [pagination, setPagination] = useState({
     current_page: 1,
     last_page: 1,
-    total: 0
+    total: 0,
+    per_page: 3
   });
 
-  // Debounced search effect
+  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchPatients();
-    }, 500); // Đợi 500ms sau khi người dùng ngừng gõ
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
 
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, filterGender, pagination.current_page]);
+  }, [searchTerm]);
 
+  // Fetch patients với debounced search term
+  useEffect(() => {
+    fetchPatients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, filterGender, pagination.current_page]);
+
+  // Fetch statistics chỉ 1 lần khi mount
   useEffect(() => {
     fetchStatistics();
   }, []);
 
-  const fetchPatients = async () => {
+  const fetchPatients = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: pagination.current_page,
-        per_page: 3,
-        ...(searchTerm && { search: searchTerm }),
+        per_page: pagination.per_page,
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
         ...(filterGender !== 'all' && { gender: filterGender }),
       });
 
@@ -52,15 +60,18 @@ const AdminPatients = () => {
       if (response.data.success) {
         const data = response.data.data;
         setPatients(data.data || []);
-        setPagination({
+        setPagination(prev => ({
+          ...prev,
           current_page: data.current_page,
           last_page: data.last_page,
           total: data.total,
-        });
+        }));
       }
     } catch (error) {
       console.error('Fetch patients error:', error);
-      if (error.response?.status === 401) {
+      if (error.response?.status === 429) {
+        toast.error('Bạn đang gửi request quá nhanh, vui lòng đợi một chút');
+      } else if (error.response?.status === 401) {
         toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
       } else {
         toast.error(error.response?.data?.message || 'Không thể tải danh sách bệnh nhân');
@@ -68,7 +79,7 @@ const AdminPatients = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearchTerm, filterGender, pagination.current_page, pagination.per_page]);
 
   const fetchStatistics = async () => {
     try {
@@ -78,6 +89,9 @@ const AdminPatients = () => {
       }
     } catch (error) {
       console.error('Fetch statistics error:', error);
+      if (error.response?.status !== 429) {
+        toast.error('Không thể tải thống kê');
+      }
     }
   };
 
@@ -116,6 +130,9 @@ const AdminPatients = () => {
     return age;
   };
 
+  const startItem = (pagination.current_page - 1) * pagination.per_page + 1;
+  const endItem = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+
   if (loading && patients.length === 0) {
     return (
       <AdminLayout>
@@ -133,7 +150,9 @@ const AdminPatients = () => {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Quản lý bệnh nhân</h1>
-          <p className="text-gray-500 text-sm mt-1">Xem và quản lý hồ sơ bệnh nhân</p>
+          <p className="text-gray-500 text-sm mt-1">
+            Hiển thị {startItem}-{endItem} trong tổng số {pagination.total} bệnh nhân
+          </p>
         </div>
 
         {/* Statistics */}
@@ -155,8 +174,11 @@ const AdminPatients = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tìm kiếm bệnh nhân..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
+              {loading && searchTerm !== debouncedSearchTerm && (
+                <Loader className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" size={16} />
+              )}
             </div>
 
             <select
@@ -172,15 +194,8 @@ const AdminPatients = () => {
           </div>
         </div>
 
-        {/* Loading Overlay */}
-        {loading && patients.length > 0 && (
-          <div className="flex justify-center py-4">
-            <Loader size={32} className="animate-spin text-blue-600" />
-          </div>
-        )}
-
         {/* Patients Grid */}
-        {!loading && patients.length > 0 ? (
+        {patients.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {patients.map((patient) => (
               <PatientCard
@@ -191,7 +206,7 @@ const AdminPatients = () => {
               />
             ))}
           </div>
-        ) : !loading && patients.length === 0 ? (
+        ) : (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <User className="mx-auto mb-4 text-gray-300" size={64} />
             <p className="text-gray-500 text-lg mb-2">Không tìm thấy bệnh nhân nào</p>
@@ -201,14 +216,15 @@ const AdminPatients = () => {
                 : 'Chưa có bệnh nhân nào trong hệ thống'}
             </p>
           </div>
-        ) : null}
+        )}
 
         {/* Pagination */}
         {pagination.last_page > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-xl border border-gray-200 p-4">
             <div className="text-sm text-gray-600">
-              Hiển thị <span className="font-semibold">{patients.length}</span> trong tổng số{' '}
-              <span className="font-semibold">{pagination.total}</span> bệnh nhân
+              Hiển thị <span className="font-semibold text-gray-900">{startItem}</span> đến
+              <span className="font-semibold text-gray-900"> {endItem}</span> trong tổng số
+              <span className="font-semibold text-gray-900"> {pagination.total}</span> bệnh nhân
             </div>
 
             <Pagination
