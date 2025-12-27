@@ -7,17 +7,20 @@
 > Hệ thống quản lý bệnh viện mã nguồn mở được xây dựng bằng **Laravel (Backend)** và **ReactJS (Frontend)**.
 
 
-### Trang Chủ
-![Hero Section](./frontend/screenshots/Trangchu.png)
+### Giao diện Trang Chủ
+![Giao diện Trang Chủ](./frontend/screenshots/Trangchu.png)
 
-### Admin
-![Admin](./frontend/screenshots/Admin.png)
+### Giao diện Admin
+![Giao diện Admin](./frontend/screenshots/Admin.png)
 
-### Doctor
-![Doctor](./frontend/screenshots/Doctor.png)
+### Giao Diện Bác sĩ
+![Giao Diện Bác sĩ](./frontend/screenshots/Doctor.png)
 ---
-### Đặt Lịch
-![Đặt Lịch](./frontend/screenshots/Datlich.png)
+### Giao diện Bệnh Nhân
+![Giao diện Bệnh Nhân](./frontend/screenshots/Patient.png)
+---
+### Giao diện Đặt Lịch hẹn
+![Giao diện Đặt Lịch hẹn](./frontend/screenshots/Datlich.png)
 ---
 ## 📖 Tổng quan
 
