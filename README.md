@@ -6,8 +6,19 @@
 
 > Hệ thống quản lý bệnh viện mã nguồn mở được xây dựng bằng **Laravel (Backend)** và **ReactJS (Frontend)**.
 
----
 
+### Trang Chủ
+![Hero Section](./frontend/screenshots/Trangchu.png)
+
+### Admin
+![Admin](./frontend/screenshots/Admin.png)
+
+### Doctor
+![Doctor](./frontend/screenshots/Doctor.png)
+---
+### Đặt Lịch
+![Đặt Lịch](./frontend/screenshots/Datlich.png)
+---
 ## 📖 Tổng quan
 
 **Hospital Management System** là một ứng dụng web giúp số hóa và tự động hóa các quy trình trong bệnh viện như quản lý bệnh nhân, bác sĩ, lịch hẹn, hồ sơ khám bệnh và thanh toán.
