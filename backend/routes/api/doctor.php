@@ -9,4 +9,5 @@ Route::middleware(['jwt.auth','role:doctor']) ->prefix('doctor') ->group(functio
     Route::get('/profile',[DoctorProfileController::class,'show']) ->name('doctor.profile.show');
     Route::put('/profile',[DoctorProfileController::class,'update']) -> name('doctor.profile.update');
     Route::get('/appointments', [App\Http\Controllers\Api\AppointmentController::class, 'index']);
+    Route::get('/patients/{id}', [DoctorProfileController::class, 'showPatient'])->name('doctor.patient.show');
 });

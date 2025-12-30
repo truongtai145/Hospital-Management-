@@ -40,6 +40,9 @@ const AppointmentDetail = lazy(() =>
 const DoctorPatients = lazy(() =>
   import("../pages/Doctors/DoctorDashboard/DoctorPatient")
 );
+const DoctorPatientDetail = lazy(() =>
+  import("../pages/Doctors/DoctorDashboard/DoctorPatientDetail")
+);
 const AdminAppointments = lazy(() =>
   import("../pages/Admin/AdminDashboard/AdminAppointment")
 );
@@ -245,6 +248,10 @@ export const ROUTES_CONFIG = [
       {
         path: PATHS.DOCTOR_PATIENTS,
         element: DoctorPatients,
+      },
+      {
+        path: PATHS.DOCTOR_PATIENT_DETAIL,
+        element: DoctorPatientDetail,
       },
       {
         path: PATHS.DOCTOR_CHAT,

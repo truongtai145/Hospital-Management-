@@ -1,25 +1,21 @@
 <?php
 
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
+use App\Models\Patient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
-
 class DoctorProfileController extends Controller
 {
-     // GET /api/v1/doctors?department_id=1
-     
+    // GET /api/v1/doctors?department_id=1
     public function index(Request $request)
     {
-        // Bắt đầu câu truy vấn với việc load sẵn thông tin department
         $query = Doctor::with('department')->where('is_available', true);
 
-        // Kiểm tra nếu có tham số department_id trong URL
         if ($request->has('department_id')) {
             $query->where('department_id', $request->department_id);
         }
@@ -32,46 +28,37 @@ class DoctorProfileController extends Controller
         ]);
     }
     
-     
-     // GET /api/v1/doctor/profile
-    
+    // GET /api/v1/doctor/profile
     public function show()
     {
-        
         $user = Auth::user();
 
-        // 2. Tìm hồ sơ bác sĩ tương ứng, load sẵn thông tin khoa và báo lỗi nếu không tìm thấy
         $doctorProfile = Doctor::where('user_id', $user->id)
                                 ->with('department')
                                 ->firstOrFail();
 
-        // 3. Trả về dữ liệu
         return response()->json([
             'success' => true,
             'data' => $doctorProfile
         ]);
     }
- public function showdoctor(Doctor $doctor)
+
+    // GET /api/v1/doctors/{doctor}
+    public function showdoctor(Doctor $doctor)
     {
-        // Load các mối quan hệ để trả về thông tin đầy đủ
         return response()->json([
             'success' => true,
             'data' => $doctor->load('department', 'user')
         ]);
     }
     
-    
-     // PUT /api/v1/doctor/profile
-     
+    // PUT /api/v1/doctor/profile
     public function update(Request $request)
     {
-       
         $user = Auth::user();
         
-        // 2. Tìm hồ sơ bác sĩ tương ứng và báo lỗi nếu không tìm thấy
         $doctorProfile = Doctor::where('user_id', $user->id)->firstOrFail();
 
-        // 3. Validate dữ liệu gửi lên (chỉ các trường bác sĩ được phép tự sửa)
         $validator = Validator::make($request->all(), [
             'full_name' => 'sometimes|required|string|max:255',
             'phone' => 'nullable|string|max:20',
@@ -79,7 +66,6 @@ class DoctorProfileController extends Controller
             'education' => 'nullable|string',
             'experience_years' => 'nullable|integer|min:0',
             'biography' => 'nullable|string',
-            // 'consultation_fee' => 'nullable|numeric|min:0', // Admin mới được sửa phí
             'avatar_url' => 'nullable|string|url|max:500',
             'is_available' => 'sometimes|boolean',
         ]);
@@ -88,14 +74,72 @@ class DoctorProfileController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-  
         $doctorProfile->update($validator->validated());
 
-        
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật hồ sơ thành công!',
             'data' => $doctorProfile->load('department')
         ]);
+    }
+
+    /**
+     * GET /api/v1/doctor/patients/{id}
+     * Xem chi tiết bệnh nhân (chỉ xem được bệnh nhân mà bác sĩ đã từng khám)
+     */
+    public function showPatient($id)
+    {
+        try {
+            $user = Auth::user();
+            
+            // Lấy thông tin bác sĩ hiện tại
+            $doctor = Doctor::where('user_id', $user->id)->firstOrFail();
+            
+            // Lấy thông tin bệnh nhân
+            $patient = Patient::with('user')->findOrFail($id);
+            
+            // Kiểm tra xem bác sĩ có từng khám bệnh nhân này không
+            $appointments = $patient->appointments()
+                ->where('doctor_id', $doctor->id)
+                ->with(['doctor', 'department'])
+                ->orderBy('appointment_time', 'desc')
+                ->get();
+            
+            // Nếu bác sĩ chưa từng khám bệnh nhân này, không cho phép xem
+            if ($appointments->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xem thông tin bệnh nhân này'
+                ], 403);
+            }
+            
+            // Tính toán thống kê
+            $stats = [
+                'total_appointments' => $appointments->count(),
+                'completed' => $appointments->where('status', 'completed')->count(),
+                'upcoming' => $appointments->whereIn('status', ['pending', 'confirmed'])->count(),
+                'cancelled' => $appointments->where('status', 'cancelled')->count(),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'patient' => $patient,
+                    'appointments' => $appointments,
+                    'stats' => $stats
+                ]
+            ]);
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy bệnh nhân'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
