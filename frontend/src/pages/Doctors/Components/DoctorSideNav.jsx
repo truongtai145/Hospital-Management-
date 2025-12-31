@@ -37,7 +37,7 @@ const DoctorSideNav = ({ doctorName, handleLogout }) => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-gray-800 truncate">
-              BS. {doctorName || 'Bác sĩ'}
+               {doctorName || 'Bác sĩ'}
             </p>
             <p className="text-xs text-gray-500">Bác sĩ điều trị</p>
           </div>

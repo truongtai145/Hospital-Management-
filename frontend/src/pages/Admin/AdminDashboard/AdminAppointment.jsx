@@ -9,8 +9,7 @@ import {
   Loader,
   AlertCircle,
   DollarSign,
-  ChevronLeft,
-  ChevronRight,
+  Clock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AdminLayout from "../Components/AdminLayout";
@@ -19,28 +18,59 @@ import { api } from "../../../api/axios";
 import { toast } from "react-toastify";
 import Pagination from "../../../components/Pagination/Pagination";
 
-const StatusBadge = ({ status }) => {
-  const styles = {
-    pending: "bg-yellow-100 text-yellow-700",
-    confirmed: "bg-blue-100 text-blue-700",
-    completed: "bg-green-100 text-green-700",
-    cancelled: "bg-red-100 text-red-700",
-    no_show: "bg-gray-100 text-gray-700",
+const StatusBadge = ({ status, appointmentId, paymentsStatus }) => {
+  const paymentStatus = paymentsStatus[appointmentId];
+  
+  if (status === 'completed') {
+    return (
+      <div className="flex flex-col gap-1">
+        {/* Badge trạng thái khám */}
+        <span className="px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-700 text-center">
+          ✓ Đã khám
+        </span>
+        
+        {/* Badge trạng thái hóa đơn */}
+        {paymentStatus === 'paid' ? (
+          <span className="px-2 py-1 rounded text-xs font-bold bg-blue-100 text-blue-700 text-center">
+            ✓ Có hóa đơn
+          </span>
+        ) : paymentStatus === 'unpaid' ? (
+          <span className="px-2 py-1 rounded text-xs font-bold bg-orange-100 text-orange-700 text-center">
+            ⚠ Chưa có HĐ
+          </span>
+        ) : (
+          <span className="px-2 py-1 rounded text-xs font-bold bg-gray-100 text-gray-500 text-center">
+            <Loader size={10} className="inline animate-spin" /> Kiểm tra...
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const config = {
+    pending: { 
+      label: "⏳ Chờ xác nhận", 
+      className: "bg-yellow-100 text-yellow-700" 
+    },
+    confirmed: { 
+      label: "✓ Đã xác nhận", 
+      className: "bg-blue-100 text-blue-700" 
+    },
+    cancelled: { 
+      label: "✗ Đã hủy", 
+      className: "bg-red-100 text-red-700" 
+    },
+    no_show: { 
+      label: "⊘ Vắng mặt", 
+      className: "bg-gray-100 text-gray-700" 
+    },
   };
 
-  const labels = {
-    pending: "Chờ xác nhận",
-    confirmed: "Đã xác nhận",
-    completed: "Đã khám",
-    cancelled: "Đã hủy",
-    no_show: "Vắng mặt",
-  };
+  const { label, className } = config[status] || config.pending;
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-bold ${styles[status]}`}
-    >
-      {labels[status]}
+    <span className={`px-3 py-1 rounded-full text-xs font-bold ${className}`}>
+      {label}
     </span>
   );
 };
@@ -62,6 +92,11 @@ const AdminAppointments = () => {
     cancelled: 0,
   });
 
+  // Payment Status States
+  const [paymentsStatus, setPaymentsStatus] = useState({});
+  // eslint-disable-next-line no-unused-vars
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
   // Payment Modal States
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -74,6 +109,36 @@ const AdminAppointments = () => {
   useEffect(() => {
     fetchStatistics();
   }, []);
+
+  // Fetch payment statuses for completed appointments
+  useEffect(() => {
+    const fetchPaymentStatuses = async () => {
+      if (appointments.length === 0) return;
+      
+      setLoadingPayments(true);
+      const statuses = {};
+      
+      const completedAppointments = appointments.filter(apt => apt.status === 'completed');
+      
+      await Promise.all(
+        completedAppointments.map(async (apt) => {
+          try {
+            const response = await api.get(`/appointments/${apt.id}/payment`);
+            statuses[apt.id] = response.data.success && response.data.data ? 'paid' : 'unpaid';
+          } catch {
+            statuses[apt.id] = 'unpaid';
+          }
+        })
+      );
+      
+      setPaymentsStatus(statuses);
+      setLoadingPayments(false);
+    };
+
+    if (appointments.length > 0) {
+      fetchPaymentStatuses();
+    }
+  }, [appointments]);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -154,6 +219,13 @@ const AdminAppointments = () => {
   const handleOpenPaymentModal = (appointment) => {
     setSelectedAppointment(appointment);
     setPaymentModalOpen(true);
+  };
+
+  const handleClosePaymentModal = () => {
+    setPaymentModalOpen(false);
+    setSelectedAppointment(null);
+    // Refresh payment statuses after modal closes
+    fetchAppointments();
   };
 
   if (loading && appointments.length === 0) {
@@ -244,7 +316,7 @@ const AdminAppointments = () => {
               <option value="all">Tất cả trạng thái</option>
               <option value="pending">Chờ xác nhận</option>
               <option value="confirmed">Đã xác nhận</option>
-              <option value="completed">Đã hoàn thành</option>
+              <option value="completed">Đã khám</option>
               <option value="cancelled">Đã hủy</option>
             </select>
 
@@ -318,7 +390,11 @@ const AdminAppointments = () => {
                       {apt.reason}
                     </td>
                     <td className="p-4 text-center">
-                      <StatusBadge status={apt.status} />
+                      <StatusBadge 
+                        status={apt.status} 
+                        appointmentId={apt.id}
+                        paymentsStatus={paymentsStatus}
+                      />
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-center gap-2">
@@ -348,8 +424,12 @@ const AdminAppointments = () => {
                         {apt.status === "completed" && (
                           <button
                             onClick={() => handleOpenPaymentModal(apt)}
-                            className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition"
-                            title="Hóa đơn"
+                            className={`p-2 rounded-lg transition ${
+                              paymentsStatus[apt.id] === 'paid'
+                                ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                                : 'bg-orange-100 text-orange-600 hover:bg-orange-200'
+                            }`}
+                            title={paymentsStatus[apt.id] === 'paid' ? 'Xem hóa đơn' : 'Tạo hóa đơn'}
                           >
                             <DollarSign size={16} />
                           </button>
@@ -389,13 +469,11 @@ const AdminAppointments = () => {
       {/* Payment Modal */}
       <AdminPaymentModal
         isOpen={paymentModalOpen}
-        onClose={() => {
-          setPaymentModalOpen(false);
-          setSelectedAppointment(null);
-        }}
+        onClose={handleClosePaymentModal}
         appointment={selectedAppointment}
         onSuccess={() => {
           fetchAppointments();
+          fetchStatistics();
         }}
       />
     </AdminLayout>
