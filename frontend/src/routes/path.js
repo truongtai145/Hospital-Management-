@@ -28,6 +28,7 @@ export const PATHS = {
   DOCTOR_APPOINTMENT_DETAIL: "/doctor-dashboard/appointments/:id",
   ADMIN: "/admin",
   ADMIN_APPOINTMENTS: "/admin/appointments",
+  ADMIN_APPOINTMENT_DETAIL: "/admin/appointments/:id",
   ADMIN_DOCTORS: "/admin/doctors",
   ADMIN_DOCTOR_DETAIL: "/admin/doctors/:id",
   ADMIN_PATIENTS: "/admin/patients",
