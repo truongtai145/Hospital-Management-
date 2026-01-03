@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { 
   Loader, Heart, Droplet, Send, User, Phone, Calendar, 
   Stethoscope, MessageSquare, CheckCircle, FileText, Hash,
-  Clock, AlertCircle, X
+  Clock, AlertCircle
 } from 'lucide-react';
 import Modal from '../modal/Modal';
 
@@ -76,9 +76,17 @@ const TimeSlotButton = ({ time, isSelected, onClick, disabled }) => (
 
 const Appointment = () => {
   const initialFormState = {
-    full_name: '', email: '', phone: '', gender: 'male',
-    department_id: '', doctor_id: '', appointment_date: '', appointment_time: '', reason: '',
-    allergies_at_appointment: '', medical_history_at_appointment: '',
+    full_name: '', 
+    email: '', 
+    phone: '', 
+    gender: 'male',
+    department_id: '', 
+    doctor_id: '', 
+    appointment_date: '', 
+    appointment_time: '', 
+    reason: '',
+    allergies_at_appointment: '', 
+    medical_history_at_appointment: '',
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -198,9 +206,6 @@ const Appointment = () => {
     if (!formData.appointment_time) {
       return { valid: false, message: 'Vui lòng chọn khung giờ khám.' };
     }
-
-    
-
     return { valid: true };
   };
 
@@ -222,7 +227,7 @@ const Appointment = () => {
         ...formData,
         appointment_time: appointmentDateTime
       };
-      delete submitData.appointment_date; // Xóa field tạm thời
+      delete submitData.appointment_date;
 
       const res = await api.post('/appointments', submitData);
       
@@ -234,16 +239,42 @@ const Appointment = () => {
           department_name: departments.find(d => d.id === parseInt(formData.department_id))?.name,
           appointment_time: appointmentDateTime
         };
+        
         setAppointmentDetails(detail);
         setIsModalOpen(true);
         setFormData(initialFormState);
         setAvailableSlots([]);
+        
+        toast.success('Đặt lịch hẹn thành công!');
       } else {
         toast.error(res.data.message || 'Đặt lịch thất bại.');
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại.';
-      toast.error(errorMsg);
+      // ✅ XỬ LÝ LỖI 409 - KHUNG GIỜ BỊ TRÙNG
+      if (err.response?.status === 409) {
+        toast.error('⚠️ Khung giờ này vừa được đặt bởi người khác! Đang làm mới danh sách...', {
+          autoClose: 4000,
+          position: 'top-center',
+        });
+        
+        // Reset selected time
+        setFormData(prev => ({ ...prev, appointment_time: '' }));
+        
+        // Tự động refresh lại danh sách slot sau 1.5s
+        setTimeout(() => {
+          checkAvailability();
+          toast.info('✓ Danh sách khung giờ đã được cập nhật. Vui lòng chọn lại.');
+        }, 1500);
+      } 
+      // XỬ LÝ CÁC LỖI KHÁC
+      else if (err.response?.status === 401) {
+        toast.error('Bạn cần đăng nhập để đặt lịch.');
+      } else if (err.response?.status === 404) {
+        toast.error('Không tìm thấy hồ sơ bệnh nhân. Vui lòng cập nhật thông tin cá nhân.');
+      } else {
+        const errorMsg = err.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại.';
+        toast.error(errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -270,34 +301,90 @@ const Appointment = () => {
                   <li>• <strong>Nghỉ trưa:</strong> 11:00 - 13:00</li>
                   <li>• <strong>Ca chiều:</strong> 13:00 - 20:00</li>
                   <li>• <strong>Thời gian khám:</strong> 30 phút/ca</li>
-               
                 </ul>
+              </div>
+
+              {/* ✅ THÊM: Cảnh báo về race condition */}
+              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded mt-4">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={18} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-semibold mb-1">Lưu ý quan trọng:</p>
+                    <p>Khung giờ có thể bị đặt bởi người khác trong lúc bạn điền form. Hệ thống sẽ tự động cập nhật danh sách nếu điều này xảy ra.</p>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="lg:w-3/5 bg-primary p-10">
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/*  Thông tin cơ bản */}
+                {/* Thông tin cơ bản */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormInput icon={<User />} label="Họ và tên *" name="full_name" value={formData.full_name} onChange={handleChange} required />
-                  <select name="gender" value={formData.gender} onChange={handleChange} required className="appointment-select pt-6">
+                  <FormInput 
+                    icon={<User />} 
+                    label="Họ và tên *" 
+                    name="full_name" 
+                    value={formData.full_name} 
+                    onChange={handleChange} 
+                    required 
+                  />
+                  <select 
+                    name="gender" 
+                    value={formData.gender} 
+                    onChange={handleChange} 
+                    required 
+                    className="appointment-select pt-6"
+                  >
                     <option value="male">Nam</option>
                     <option value="female">Nữ</option>
                     <option value="other">Khác</option>
                   </select>
-                  <FormInput icon={<User />} label="Email *" name="email" type="email" value={formData.email} onChange={handleChange} required />
-                  <FormInput icon={<Phone />} label="Số điện thoại *" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+                  <FormInput 
+                    icon={<User />} 
+                    label="Email *" 
+                    name="email" 
+                    type="email" 
+                    value={formData.email} 
+                    onChange={handleChange} 
+                    required 
+                  />
+                  <FormInput 
+                    icon={<Phone />} 
+                    label="Số điện thoại *" 
+                    name="phone" 
+                    type="tel" 
+                    value={formData.phone} 
+                    onChange={handleChange} 
+                    required 
+                  />
                 </div>
 
                 {/* Chọn khoa, bác sĩ */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <select name="department_id" value={formData.department_id} onChange={handleChange} required className="appointment-select pt-6">
+                  <select 
+                    name="department_id" 
+                    value={formData.department_id} 
+                    onChange={handleChange} 
+                    required 
+                    className="appointment-select pt-6"
+                  >
                     <option value="">-- Chọn khoa * --</option>
-                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
                   </select>
-                  <select name="doctor_id" value={formData.doctor_id} onChange={handleChange} disabled={!formData.department_id} className="appointment-select pt-6" required>
+                  <select 
+                    name="doctor_id" 
+                    value={formData.doctor_id} 
+                    onChange={handleChange} 
+                    disabled={!formData.department_id} 
+                    className="appointment-select pt-6" 
+                    required
+                  >
                     <option value="">-- Chọn bác sĩ * --</option>
-                    {filteredDoctors.map(doc => <option key={doc.id} value={doc.id}>{doc.full_name}</option>)}
+                    {filteredDoctors.map(doc => (
+                      <option key={doc.id} value={doc.id}>{doc.full_name}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -328,16 +415,22 @@ const Appointment = () => {
                         <span className="ml-3 text-white">Đang kiểm tra lịch trống...</span>
                       </div>
                     ) : availableSlots.length > 0 ? (
-                      <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-2 bg-white/5 rounded-lg">
-                        {availableSlots.map((slot) => (
-                          <TimeSlotButton
-                            key={slot}
-                            time={slot}
-                            isSelected={formData.appointment_time === slot}
-                            onClick={() => handleTimeSlotSelect(slot)}
-                          />
-                        ))}
-                      </div>
+                      <>
+                        <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-2 bg-white/5 rounded-lg">
+                          {availableSlots.map((slot) => (
+                            <TimeSlotButton
+                              key={slot}
+                              time={slot}
+                              isSelected={formData.appointment_time === slot}
+                              onClick={() => handleTimeSlotSelect(slot)}
+                            />
+                          ))}
+                        </div>
+                        {/* ✅ Hiển thị số slot còn trống */}
+                        <p className="text-white/80 text-sm text-center">
+                          Còn <span className="font-bold text-white">{availableSlots.length}</span> khung giờ trống
+                        </p>
+                      </>
                     ) : (
                       <div className="flex items-center gap-3 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-white">
                         <AlertCircle size={24} />
@@ -347,16 +440,54 @@ const Appointment = () => {
                   </div>
                 )}
 
-                <FormTextarea icon={<MessageSquare />} label="Lý do khám *" name="reason" value={formData.reason} onChange={handleChange} rows="3" maxLength={500} required />
+                <FormTextarea 
+                  icon={<MessageSquare />} 
+                  label="Lý do khám *" 
+                  name="reason" 
+                  value={formData.reason} 
+                  onChange={handleChange} 
+                  rows="3" 
+                  maxLength={500} 
+                  required 
+                />
 
                 <div className="pt-4 border-t border-white/20 space-y-6">
                   <h4 className="text-white font-semibold text-lg">Thông tin y tế bổ sung</h4>
-                  <FormTextarea icon={<Droplet />} label="Tiền sử dị ứng" name="allergies_at_appointment" value={formData.allergies_at_appointment} onChange={handleChange} rows="2" maxLength={500} />
-                  <FormTextarea icon={<Heart />} label="Tiền sử bệnh án" name="medical_history_at_appointment" value={formData.medical_history_at_appointment} onChange={handleChange} rows="2" maxLength={500} />
+                  <FormTextarea 
+                    icon={<Droplet />} 
+                    label="Tiền sử dị ứng" 
+                    name="allergies_at_appointment" 
+                    value={formData.allergies_at_appointment} 
+                    onChange={handleChange} 
+                    rows="2" 
+                    maxLength={500} 
+                  />
+                  <FormTextarea 
+                    icon={<Heart />} 
+                    label="Tiền sử bệnh án" 
+                    name="medical_history_at_appointment" 
+                    value={formData.medical_history_at_appointment} 
+                    onChange={handleChange} 
+                    rows="2" 
+                    maxLength={500} 
+                  />
                 </div>
 
-                <button type="submit" disabled={isLoading || !formData.appointment_time} className="w-full bg-slate-100 text-primary font-bold py-4 rounded-lg hover:bg-white transition flex items-center justify-center gap-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isLoading ? <Loader className="animate-spin" /> : <>Gửi đi <Send size={20} /></>}
+                <button 
+                  type="submit" 
+                  disabled={isLoading || !formData.appointment_time} 
+                  className="w-full bg-slate-100 text-primary font-bold py-4 rounded-lg hover:bg-white transition flex items-center justify-center gap-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader className="animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      Gửi đi <Send size={20} />
+                    </>
+                  )}
                 </button>
               </form>
             </div>
@@ -364,7 +495,7 @@ const Appointment = () => {
         </div>
       </section>
 
-      {/* hiển thị chi tiết lịch hẹn sau khi đặt lịch */}
+      {/* Modal hiển thị chi tiết lịch hẹn */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Đặt lịch thành công!">
         {appointmentDetails && (
           <div className="space-y-5">
@@ -382,14 +513,18 @@ const Appointment = () => {
               <div className="space-y-3">
                 <InfoItem icon={<User />} title="Bệnh nhân" value={appointmentDetails.full_name} />
                 <InfoItem icon={<Phone />} title="Số điện thoại" value={appointmentDetails.phone} />
-                <InfoItem icon={<Calendar />} title="Thời gian" value={new Date(appointmentDetails.appointment_time).toLocaleString('vi-VN', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })} />
+                <InfoItem 
+                  icon={<Calendar />} 
+                  title="Thời gian" 
+                  value={new Date(appointmentDetails.appointment_time).toLocaleString('vi-VN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })} 
+                />
                 <InfoItem icon={<Heart />} title="Bệnh án" value={appointmentDetails.medical_history_at_appointment} />
               </div>
               <div className="space-y-3">
@@ -401,7 +536,10 @@ const Appointment = () => {
             </div>
 
             <div className="text-right">
-              <button onClick={() => setIsModalOpen(false)} className="bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-900 transition">
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-900 transition"
+              >
                 OK
               </button>
             </div>

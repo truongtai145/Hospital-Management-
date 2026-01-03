@@ -180,7 +180,7 @@ export default function Login() {
           <p>
             Chưa có tài khoản?{" "}
             <Link to="/register" className="font-bold text-secondary hover:text-blue-700 transition-colors underline-offset-2 hover:underline">
-              Đăng ký lịch khám ngay
+              Đăng ký tài khoản
             </Link>
           </p>
         </div>

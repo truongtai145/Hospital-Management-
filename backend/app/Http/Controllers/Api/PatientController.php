@@ -12,11 +12,11 @@ class PatientController extends Controller
 {
     public function show(Request $request)
     {
-        $user = Auth::user(); // Hoặc $request->user()
+        $user = Auth::user(); 
         
         if (!$user) {
             return response()->json([
-                'success' => false, // ← Đổi từ 'status' thành 'success'
+                'success' => false, 
                 'message' => 'Unauthorized'
             ], 401);
         }
@@ -25,14 +25,14 @@ class PatientController extends Controller
         
         if (!$patient) {
             return response()->json([
-                'success' => false, // ← Đổi từ 'status' thành 'success'
+                'success' => false, 
                 'data' => null,
                 'message' => 'Không tìm thấy hồ sơ bệnh nhân'
             ], 404);
         }
             
         return response()->json([
-            'success' => true, // ← Đổi từ 'status' thành 'success'
+            'success' => true, // 
             'data' => $patient,
             'message' => 'Lấy hồ sơ bệnh nhân thành công'
         ], 200);

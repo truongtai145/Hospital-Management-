@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Patient;
 use Carbon\Carbon;
 use App\Models\Doctor;
+use Illuminate\Support\Facades\DB;
 class AppointmentController extends Controller
 {
     
@@ -67,51 +68,95 @@ class AppointmentController extends Controller
     
      // Tạo một lịch hẹn mới.
      
-   public function store(Request $request)
+  public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'department_id' => 'required|exists:departments,id',
             'doctor_id' => 'required|exists:doctors,id',
             'appointment_time' => 'required|date|after:now',
             'reason' => 'required|string',
-     
             'full_name' => 'required_without:user_id|string|max:255',
             'email' => 'required_without:user_id|email|max:255',
             'phone' => 'required_without:user_id|string|max:20',
-          
             'allergies_at_appointment' => 'nullable|string',
             'medical_history_at_appointment' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false, 
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         $validatedData = $validator->validated();
 
-        // Kiểm tra nếu người dùng đã đăng nhập
+        // Kiểm tra user đã đăng nhập
         if (Auth::check()) {
             $user = Auth::user();
-            // Tìm patient_id từ user_id
             $patient = Patient::where('user_id', $user->id)->first();
+            
             if ($patient) {
                 $validatedData['patient_id'] = $patient->id;
             } else {
-                return response()->json(['success' => false, 'message' => 'Không tìm thấy hồ sơ bệnh nhân cho tài khoản này.'], 404);
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Không tìm thấy hồ sơ bệnh nhân cho tài khoản này.'
+                ], 404);
             }
         } else {
-         
-            // Ở đây, ta yêu cầu đăng nhập để đơn giản hóa
-            return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập để đặt lịch.'], 401);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Bạn cần đăng nhập để đặt lịch.'
+            ], 401);
         }
 
-        $appointment = Appointment::create($validatedData);
+        //  SỬ DỤNG TRANSACTION + LOCK ĐỂ TRÁNH RACE CONDITION
+        try {
+            return DB::transaction(function () use ($validatedData) {
+                $appointmentTime = Carbon::parse($validatedData['appointment_time']);
+                
+                //  Chặn các request khác đang cố đặt cùng thời điểm
+                // lockForUpdate() sẽ khóa row cho đến khi transaction hoàn tất
+                $existingAppointment = Appointment::where('doctor_id', $validatedData['doctor_id'])
+                    ->where('appointment_time', $appointmentTime)
+                    ->whereIn('status', ['pending', 'confirmed', 'completed'])
+                    ->lockForUpdate() // Lock để tránh 2 request cùng lúc
+                    ->exists();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Đặt lịch hẹn thành công!',
-            'data' => $appointment
-        ], 201);
+                if ($existingAppointment) {
+                    throw new \Exception('Khung giờ này đã được đặt bởi người khác. Vui lòng chọn khung giờ khác.');
+                }
+
+                $appointment = Appointment::create($validatedData);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đặt lịch hẹn thành công!',
+                    'data' => $appointment
+                ], 201);
+            });
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Bắt lỗi duplicate từ unique constraint
+            if ($e->getCode() === '23000') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Khung giờ này đã được đặt bởi người khác. Vui lòng chọn khung giờ khác.'
+                ], 409);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi đặt lịch: ' . $e->getMessage()
+            ], 500);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 409);
+        }
     }
 
 

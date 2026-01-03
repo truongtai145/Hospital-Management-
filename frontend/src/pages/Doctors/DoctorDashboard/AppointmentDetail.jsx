@@ -55,7 +55,8 @@ const AppointmentDetail = () => {
     setError(null);
     
     try {
-      const response = await api.get(`/appointments/${id}`);
+      // ✅ SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
+      const response = await api.get(`/doctor/appointments/${id}`);
       
       if (response.data.success) {
         const apt = response.data.data;
@@ -75,11 +76,9 @@ const AppointmentDetail = () => {
     }
   };
 
-  // Hàm kiểm tra trạng thái có được phép thay đổi không
   const getAvailableStatuses = (currentStatus) => {
     switch (currentStatus) {
       case 'pending':
-        // Chờ xác nhận -> Có thể chuyển thành: Đã xác nhận, Đã hủy
         return [
           { value: 'pending', label: 'Chờ xác nhận' },
           { value: 'confirmed', label: 'Đã xác nhận' },
@@ -87,8 +86,6 @@ const AppointmentDetail = () => {
         ];
       
       case 'confirmed':
-        // Đã xác nhận -> Có thể chuyển thành: Đã hoàn thành, Vắng mặt, Đã hủy
-        // KHÔNG được quay lại Chờ xác nhận
         return [
           { value: 'confirmed', label: 'Đã xác nhận' },
           { value: 'completed', label: 'Đã hoàn thành' },
@@ -99,7 +96,6 @@ const AppointmentDetail = () => {
       case 'completed':
       case 'no_show':
       case 'cancelled':
-        // Các trạng thái này là FINAL - không được thay đổi
         return [
           { value: currentStatus, label: currentStatus === 'completed' ? 'Đã hoàn thành' : currentStatus === 'no_show' ? 'Vắng mặt' : 'Đã hủy' }
         ];
@@ -115,7 +111,6 @@ const AppointmentDetail = () => {
     }
   };
 
-  // Kiểm tra xem trạng thái có bị khóa không
   const isStatusLocked = (status) => {
     return ['completed', 'no_show', 'cancelled'].includes(status);
   };
@@ -131,28 +126,26 @@ const AppointmentDetail = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Kiểm tra nếu trạng thái bị khóa
     if (isStatusLocked(appointment.status)) {
       toast.warning('Không thể cập nhật lịch hẹn đã hoàn thành, đã hủy hoặc vắng mặt!');
       return;
     }
 
-    // Kiểm tra nếu đổi sang completed hoặc no_show mà chưa có ghi chú
     if (['completed', 'no_show'].includes(formData.status) && !formData.doctor_notes.trim()) {
-      toast.warning('Vui lòng nhập chuẩn đoán trước khi hoàn thành lịch hẹn!');
+      toast.warning('Vui lòng nhập chẩn đoán trước khi hoàn thành lịch hẹn!');
       return;
     }
 
     setSaving(true);
     
     try {
-      const response = await api.put(`/appointments/${id}`, formData);
+      // ✅ SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
+      const response = await api.put(`/doctor/appointments/${id}`, formData);
       
       if (response.data.success) {
         setAppointment(response.data.data);
         toast.success('Cập nhật thông tin thành công!');
         
-        // Nếu chuyển sang trạng thái final, reload để cập nhật UI
         if (['completed', 'no_show', 'cancelled'].includes(formData.status)) {
           fetchAppointmentDetail();
         }
@@ -160,13 +153,13 @@ const AppointmentDetail = () => {
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Không thể cập nhật thông tin";
       toast.error(errorMsg);
+      console.error('Update error:', error.response || error);
     } finally {
       setSaving(false);
     }
   };
 
   const handleQuickStatusUpdate = async (newStatus) => {
-    // Kiểm tra nếu trạng thái bị khóa
     if (isStatusLocked(appointment.status)) {
       toast.warning('Không thể thay đổi trạng thái của lịch hẹn này!');
       return;
@@ -174,7 +167,8 @@ const AppointmentDetail = () => {
 
     setSaving(true);
     try {
-      const response = await api.put(`/appointments/${id}`, {
+      // ✅ SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
+      const response = await api.put(`/doctor/appointments/${id}`, {
         status: newStatus
       });
       
@@ -183,13 +177,13 @@ const AppointmentDetail = () => {
         setFormData(prev => ({ ...prev, status: newStatus }));
         toast.success('Cập nhật trạng thái thành công!');
         
-        // Reload nếu chuyển sang cancelled
         if (newStatus === 'cancelled') {
           fetchAppointmentDetail();
         }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể cập nhật trạng thái');
+      console.error('Status update error:', error.response || error);
     } finally {
       setSaving(false);
     }
@@ -262,7 +256,6 @@ const AppointmentDetail = () => {
           </div>
         </div>
         
-        {/* Cảnh báo nếu trạng thái đã khóa */}
         {statusLocked && (
           <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
@@ -276,7 +269,7 @@ const AppointmentDetail = () => {
         )}
       </div>
 
-      {/* Quick Actions - Chỉ hiện khi status = pending */}
+      {/* Quick Actions */}
       {appointment.status === 'pending' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-800 mb-4">Hành động nhanh</h3>
@@ -366,7 +359,7 @@ const AppointmentDetail = () => {
                 <div>
                   <p className="text-sm text-gray-500 mb-1 flex items-center gap-2">
                     <AlertCircle size={14} />
-                    Dị ứng (tại thời điểm đặt)
+                    Dị ứng (tại thời điểm đặt lịch)
                   </p>
                   <p className="text-sm text-gray-800 bg-red-50 p-3 rounded-lg border border-red-200">
                     {appointment.allergies_at_appointment}
@@ -378,7 +371,7 @@ const AppointmentDetail = () => {
                 <div>
                   <p className="text-sm text-gray-500 mb-1 flex items-center gap-2">
                     <FileText size={14} />
-                    Tiền sử bệnh (tại thời điểm đặt)
+                    Tiền sử bệnh (tại thời điểm đặt lịch)
                   </p>
                   <p className="text-sm text-gray-800 bg-blue-50 p-3 rounded-lg border border-blue-200">
                     {appointment.medical_history_at_appointment}
@@ -455,7 +448,7 @@ const AppointmentDetail = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 items-center gap-2">
                   <FileText size={16} />
-                  Chuẩn Đoán {!statusLocked && <span className="text-red-500">*</span>}
+                  Chẩn đoán {!statusLocked && <span className="text-red-500">*</span>}
                 </label>
                 <textarea
                   name="doctor_notes"
@@ -505,7 +498,6 @@ const AppointmentDetail = () => {
                   ))}
                 </select>
                 
-                {/* Hiển thị gợi ý về quy tắc chuyển trạng thái */}
                 {!statusLocked && (
                   <p className="mt-2 text-xs text-gray-500">
                     {appointment.status === 'pending' && '💡 Xác nhận lịch trước khi khám bệnh'}

@@ -83,10 +83,7 @@ class DoctorProfileController extends Controller
         ]);
     }
 
-    /**
-     * GET /api/v1/doctor/patients/{id}
-     * Xem chi tiết bệnh nhân (chỉ xem được bệnh nhân mà bác sĩ đã từng khám)
-     */
+    /* GET /api/v1/doctor/patients/{id} */
     public function showPatient($id)
     {
         try {
