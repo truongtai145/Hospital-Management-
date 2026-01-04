@@ -54,9 +54,9 @@ class AdminDoctorController extends Controller
         ]);
     }
 
-    /**
-     * Tạo bác sĩ mới
-     */
+    
+     // Tạo bác sĩ mới
+     
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -135,7 +135,7 @@ class AdminDoctorController extends Controller
             $doctor = Doctor::with(['department', 'user'])
                 ->findOrFail($id);
 
-            // ✅ FIX: Query trực tiếp từ bảng appointments
+            
             // Đảm bảo lấy dữ liệu chính xác từ database
             $stats = [
                 'total_appointments' => Appointment::where('doctor_id', $id)->count(),
@@ -168,9 +168,9 @@ class AdminDoctorController extends Controller
         }
     }
 
-    /**
-     * Cập nhật thông tin bác sĩ
-     */
+
+     // Cập nhật thông tin bác sĩ
+     
     public function update(Request $request, $id)
     {
         $doctor = Doctor::findOrFail($id);
@@ -205,9 +205,9 @@ class AdminDoctorController extends Controller
         ]);
     }
 
-    /**
-     * Xóa bác sĩ
-     */
+    
+    // Xóa bác sĩ
+     
     public function destroy($id)
     {
         DB::beginTransaction();

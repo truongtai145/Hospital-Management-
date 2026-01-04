@@ -7,19 +7,15 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Payment;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class AdminDashboardController extends Controller
 {
-    
-     // Lấy thống kê tổng quan cho dashboard
-     
     public function getStats(Request $request)
     {
-        $period = $request->get('period', 'today'); // today, week, month
+        $period = $request->get('period', 'today');
         
         $today = Carbon::today();
         $endDate = Carbon::now()->endOfDay();
@@ -29,7 +25,11 @@ class AdminDashboardController extends Controller
             default => $today,
         };
         
-        // Tối ưu: Gộp queries appointments trong cùng 1 query với điều kiện khác nhau
+        // Xác định kỳ trước để so sánh
+        [$previousStart, $previousEnd] = $this->getPreviousPeriod($period);
+
+      // appointments
+        // Kỳ hiện tại
         $appointmentStats = Appointment::select(
                 DB::raw('COUNT(*) as total'),
                 DB::raw('SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending')
@@ -37,19 +37,43 @@ class AdminDashboardController extends Controller
             ->whereBetween('appointment_time', [$startDate, $endDate])
             ->first();
         
-        $todayAppointments = $appointmentStats->total ?? 0;
+        $currentAppointments = $appointmentStats->total ?? 0;
         $pendingAppointments = $appointmentStats->pending ?? 0;
 
-        // Doanh thu - tối ưu với join
-        $revenue = Appointment::where('appointments.status', 'completed')
-            ->whereBetween('appointments.appointment_time', [$startDate, $endDate])
-            ->join('doctors', 'appointments.doctor_id', '=', 'doctors.id')
-            ->sum('doctors.consultation_fee') ?? 0;
-
-        // Bệnh nhân mới
-        $newPatients = Patient::whereDate('created_at', '>=', $startDate)->count();
+        // Kỳ trước
+        $previousAppointments = Appointment::whereBetween('appointment_time', [$previousStart, $previousEnd])->count();
         
-        // Bác sĩ đang hoạt động - gộp 2 queries thành 1
+        // Tính % thay đổi
+        $appointmentTrend = $this->calculateTrend($currentAppointments, $previousAppointments);
+
+        //revenue
+        // Revenue kỳ hiện tại - từ bảng payments
+        $currentRevenue = Payment::where('status', 'completed')
+            ->whereBetween(DB::raw('COALESCE(payment_date, created_at)'), [$startDate, $endDate])
+            ->sum('total_amount') ?? 0;
+
+        // Revenue kỳ trước
+        $previousRevenue = Payment::where('status', 'completed')
+            ->whereBetween(DB::raw('COALESCE(payment_date, created_at)'), [$previousStart, $previousEnd])
+            ->sum('total_amount') ?? 0;
+
+        $revenueTrend = $this->calculateTrend($currentRevenue, $previousRevenue);
+
+        // Average revenue per appointment
+        $averageRevenue = $currentAppointments > 0 
+            ? round($currentRevenue / $currentAppointments) 
+            : 0;
+
+     
+        // Bệnh nhân mới kỳ hiện tại
+        $newPatients = Patient::whereBetween('created_at', [$startDate, $endDate])->count();
+        
+        // Bệnh nhân mới kỳ trước
+        $previousNewPatients = Patient::whereBetween('created_at', [$previousStart, $previousEnd])->count();
+        
+        $patientsTrend = $this->calculateTrend($newPatients, $previousNewPatients);
+
+        // ============ DOCTORS ============
         $doctorStats = Doctor::select(
                 DB::raw('COUNT(*) as total'),
                 DB::raw('SUM(CASE WHEN is_available = 1 THEN 1 ELSE 0 END) as active')
@@ -59,57 +83,75 @@ class AdminDashboardController extends Controller
         $activeDoctors = $doctorStats->active ?? 0;
         $totalDoctors = $doctorStats->total ?? 0;
 
-        // Tính phần trăm thay đổi so với kỳ trước
-        $previousPeriod = match($period) {
-            'week' => [Carbon::now()->subWeek()->startOfWeek(), Carbon::now()->subWeek()->endOfWeek()],
-            'month' => [Carbon::now()->subMonth()->startOfMonth(), Carbon::now()->subMonth()->endOfMonth()],
-            default => [Carbon::yesterday()->startOfDay(), Carbon::yesterday()->endOfDay()],
-        };
-
-        $previousAppointments = Appointment::whereBetween('appointment_time', $previousPeriod)->count();
-        $appointmentTrend = $previousAppointments > 0 
-            ? round((($todayAppointments - $previousAppointments) / $previousAppointments) * 100, 1)
-            : 0;
+        // Doctors trend - so với số bác sĩ active kỳ trước
+        $previousActiveDoctors = Doctor::where('is_available', true)
+            ->where('created_at', '<', $startDate)
+            ->count();
+        
+        $doctorsTrend = $this->calculateTrend($activeDoctors, $previousActiveDoctors);
 
         return response()->json([
             'success' => true,
             'data' => [
                 'appointments' => [
-                    'total' => $todayAppointments,
+                    'total' => $currentAppointments,
                     'pending' => $pendingAppointments,
                     'trend' => $appointmentTrend,
                 ],
                 'revenue' => [
-                    'total' => $revenue,
-                    'average' => $todayAppointments > 0 ? round($revenue / $todayAppointments) : 0,
-                    'trend' => 12.5, // Có thể tính toán thêm nếu cần
+                    'total' => $currentRevenue,
+                    'average' => $averageRevenue,
+                    'trend' => $revenueTrend,
                 ],
                 'patients' => [
                     'new' => $newPatients,
-                    'trend' => -5, // Có thể tính toán thêm nếu cần
+                    'trend' => $patientsTrend,
                 ],
                 'doctors' => [
                     'active' => $activeDoctors,
                     'total' => $totalDoctors,
-                    'trend' => 8,
+                    'trend' => $doctorsTrend,
                 ],
             ]
         ]);
     }
 
-    
-    // Lấy dữ liệu biểu đồ
-     
+    // Lấy khoảng thời gian của kỳ trước dựa trên kỳ hiện tại
+    private function getPreviousPeriod($period)
+    {
+        return match($period) {
+            'week' => [
+                Carbon::now()->subWeek()->startOfWeek(),
+                Carbon::now()->subWeek()->endOfWeek()
+            ],
+            'month' => [
+                Carbon::now()->subMonth()->startOfMonth(),
+                Carbon::now()->subMonth()->endOfMonth()
+            ],
+            default => [ // today
+                Carbon::yesterday()->startOfDay(),
+                Carbon::yesterday()->endOfDay()
+            ],
+        };
+    }
+// Tính phần trăm thay đổi giữa kỳ hiện tại và kỳ trước
+    private function calculateTrend($current, $previous)
+    {
+        if ($previous == 0) {
+            return $current > 0 ? 100 : 0;
+        }
+        
+        return round((($current - $previous) / $previous) * 100, 1);
+    }
+
     public function getChartData(Request $request)
     {
-        $period = $request->get('period', 'week'); // today, week, month
+        $period = $request->get('period', 'week');
         
         if ($period === 'today') {
-            // Biểu đồ theo giờ trong ngày hôm nay
             $today = Carbon::today();
             $todayEnd = Carbon::today()->endOfDay();
             
-            // Lấy appointments theo giờ
             $appointmentsData = Appointment::select(
                     DB::raw('HOUR(appointment_time) as hour'),
                     DB::raw('COUNT(*) as count')
@@ -119,7 +161,6 @@ class AdminDashboardController extends Controller
                 ->pluck('count', 'hour')
                 ->toArray();
             
-            // Lấy revenue từ payments table - tính theo giờ của payment_date hoặc created_at
             $revenueData = Payment::select(
                     DB::raw('HOUR(COALESCE(payment_date, created_at)) as hour'),
                     DB::raw('SUM(total_amount) as total')
@@ -130,7 +171,6 @@ class AdminDashboardController extends Controller
                 ->pluck('total', 'hour')
                 ->toArray();
             
-            // Build data array với 24 giờ (hoặc chỉ giờ có data)
             $data = [];
             for ($i = 0; $i < 24; $i++) {
                 $data[] = [
@@ -140,11 +180,9 @@ class AdminDashboardController extends Controller
                 ];
             }
         } elseif ($period === 'week') {
-            // Tối ưu: dùng single query với groupBy thay vì loop
             $startDate = Carbon::now()->startOfWeek();
             $endDate = Carbon::now()->endOfWeek();
             
-            // Lấy tất cả appointments trong tuần và group theo ngày
             $appointmentsData = Appointment::select(
                     DB::raw('DATE(appointment_time) as date'),
                     DB::raw('COUNT(*) as count')
@@ -154,7 +192,6 @@ class AdminDashboardController extends Controller
                 ->pluck('count', 'date')
                 ->toArray();
             
-            // Lấy revenue từ payments table (theo ngày)
             $revenueData = Payment::select(
                     DB::raw('DATE(COALESCE(payment_date, created_at)) as date'),
                     DB::raw('SUM(total_amount) as total')
@@ -165,7 +202,6 @@ class AdminDashboardController extends Controller
                 ->pluck('total', 'date')
                 ->toArray();
             
-            // Build data array với tất cả 7 ngày
             $days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
             $data = [];
             
@@ -180,23 +216,19 @@ class AdminDashboardController extends Controller
                 ];
             }
         } else {
-            // Month data - tối ưu với single queries
             $monthStart = Carbon::now()->startOfMonth();
             $monthEnd = Carbon::now()->endOfMonth();
             $weeksInMonth = 4;
             
-            // Tính toán tuần
             $data = [];
             
             for ($i = 0; $i < $weeksInMonth; $i++) {
                 $weekStart = $monthStart->copy()->addWeeks($i);
                 $weekEnd = min($weekStart->copy()->endOfWeek(), $monthEnd);
                 
-                // Single query cho appointments
                 $appointments = Appointment::whereBetween('appointment_time', [$weekStart, $weekEnd])
                     ->count();
                 
-                // Revenue từ payments table
                 $revenue = Payment::where('status', 'completed')
                     ->whereBetween(DB::raw('COALESCE(payment_date, created_at)'), [$weekStart, $weekEnd])
                     ->sum('total_amount');
@@ -215,9 +247,6 @@ class AdminDashboardController extends Controller
         ]);
     }
 
-    
-    // Lấy danh sách lịch hẹn gần đây
-     
     public function getRecentAppointments()
     {
         $appointments = Appointment::with(['patient', 'doctor'])
@@ -243,9 +272,6 @@ class AdminDashboardController extends Controller
         ]);
     }
 
-    
-     // Lấy tổng quan nhanh
-     
     public function getOverview()
     {
         $today = Carbon::today();

@@ -10,20 +10,20 @@ class Conversation extends Model
     use HasFactory;
 
     protected $fillable = [
-        // 'name' // nếu bạn có cột name
+        
     ];
 
-    /**
-     * Những người tham gia vào cuộc trò chuyện này.
-     */
+
+     // Những người tham gia vào cuộc trò chuyện này.
+     
     public function users()
     {
         return $this->belongsToMany(User::class);
     }
 
-    /**
-     * Tất cả tin nhắn trong cuộc trò chuyện này.
-     */
+    
+      // Tất cả tin nhắn trong cuộc trò chuyện này.
+     
     public function messages()
     {
         return $this->hasMany(Message::class);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Eye, Edit, Trash2, Power, Loader, X } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, Power, Loader, X, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../Components/AdminLayout';
 import { api } from '../../../api/axios';
@@ -11,13 +11,15 @@ const AdminDoctors = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(''); // Thêm debounced state
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [filterAvailable, setFilterAvailable] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [stats, setStats] = useState({ total: 0, available: 0, unavailable: 0 });
+  const [validationErrors, setValidationErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   
   const [pagination, setPagination] = useState({ 
     current_page: 1, 
@@ -42,22 +44,18 @@ const AdminDoctors = () => {
     is_available: true,
   });
 
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 500); // Chờ 500ms sau khi user ngừng gõ
-
+    }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch doctors với debounced search term
   useEffect(() => {
     fetchDoctors();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm, filterDepartment, filterAvailable, pagination.current_page]);
 
-  // Fetch departments và statistics chỉ 1 lần khi mount
   useEffect(() => {
     fetchDepartments();
     fetchStatistics();
@@ -104,9 +102,6 @@ const AdminDoctors = () => {
       }
     } catch (error) {
       console.error('Fetch departments error:', error);
-      if (error.response?.status !== 429) {
-        toast.error('Không thể tải danh sách khoa');
-      }
     }
   };
 
@@ -118,9 +113,6 @@ const AdminDoctors = () => {
       }
     } catch (error) {
       console.error('Fetch statistics error:', error);
-      if (error.response?.status !== 429) {
-        toast.error('Không thể tải thống kê');
-      }
     }
   };
 
@@ -130,12 +122,27 @@ const AdminDoctors = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleAddDoctor = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setValidationErrors({});
+    
     try {
+      console.log('📤 Submitting doctor data:', formData);
+      
       const response = await api.post('/admin/doctors', formData);
+      
       if (response.data.success) {
         toast.success('Thêm bác sĩ mới thành công!');
         setShowAddModal(false);
@@ -144,16 +151,41 @@ const AdminDoctors = () => {
         fetchStatistics();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Không thể thêm bác sĩ');
+      console.error('❌ Add doctor error:', error.response || error);
+      
+      if (error.response?.status === 422) {
+        // Validation errors
+        const errors = error.response.data.errors || {};
+        setValidationErrors(errors);
+        
+        // Show first error in toast
+        const firstError = Object.values(errors)[0];
+        if (firstError && Array.isArray(firstError)) {
+          toast.error(firstError[0]);
+        } else {
+          toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
+        }
+      } else {
+        toast.error(error.response?.data?.message || 'Không thể thêm bác sĩ');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleEditDoctor = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setValidationErrors({});
+    
     try {
       // eslint-disable-next-line no-unused-vars
       const { email, password, ...updateData } = formData;
+      
+      console.log('📤 Updating doctor data:', updateData);
+      
       const response = await api.put(`/admin/doctors/${selectedDoctor.id}`, updateData);
+      
       if (response.data.success) {
         toast.success('Cập nhật thông tin thành công!');
         setShowEditModal(false);
@@ -161,7 +193,23 @@ const AdminDoctors = () => {
         fetchDoctors();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Không thể cập nhật thông tin');
+      console.error('❌ Update doctor error:', error.response || error);
+      
+      if (error.response?.status === 422) {
+        const errors = error.response.data.errors || {};
+        setValidationErrors(errors);
+        
+        const firstError = Object.values(errors)[0];
+        if (firstError && Array.isArray(firstError)) {
+          toast.error(firstError[0]);
+        } else {
+          toast.error('Vui lòng kiểm tra lại thông tin nhập vào');
+        }
+      } else {
+        toast.error(error.response?.data?.message || 'Không thể cập nhật thông tin');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -211,6 +259,7 @@ const AdminDoctors = () => {
       avatar_url: doctor.avatar_url || '',
       is_available: doctor.is_available,
     });
+    setValidationErrors({});
     setShowEditModal(true);
   };
 
@@ -231,6 +280,7 @@ const AdminDoctors = () => {
       is_available: true,
     });
     setSelectedDoctor(null);
+    setValidationErrors({});
   };
 
   const goToPage = (page) => {
@@ -267,7 +317,10 @@ const AdminDoctors = () => {
             </p>
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
           >
             <Plus size={20} />
@@ -369,6 +422,8 @@ const AdminDoctors = () => {
           onSubmit={handleAddDoctor}
           onClose={() => { setShowAddModal(false); resetForm(); }}
           isEdit={false}
+          validationErrors={validationErrors}
+          submitting={submitting}
         />
       )}
 
@@ -381,6 +436,8 @@ const AdminDoctors = () => {
           onSubmit={handleEditDoctor}
           onClose={() => { setShowEditModal(false); resetForm(); }}
           isEdit={true}
+          validationErrors={validationErrors}
+          submitting={submitting}
         />
       )}
     </AdminLayout>
@@ -468,207 +525,299 @@ const DoctorCard = ({ doctor, onEdit, onDelete, onToggleAvailability }) => (
   </div>
 );
 
-const DoctorFormModal = ({ title, formData, departments, onChange, onSubmit, onClose, isEdit }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-      <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-800">{title}</h2>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-          <X size={20} />
-        </button>
-      </div>
+const DoctorFormModal = ({ title, formData, departments, onChange, onSubmit, onClose, isEdit, validationErrors, submitting }) => {
+  const getFieldError = (fieldName) => {
+    const error = validationErrors[fieldName];
+    if (error && Array.isArray(error)) {
+      return error[0];
+    }
+    return null;
+  };
 
-      <form onSubmit={onSubmit} className="p-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          {!isEdit && (
-            <>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email <span className="text-red-500">*</span>
-                </label>
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {!isEdit && (
+              <>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={onChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      getFieldError('email') ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {getFieldError('email') && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {getFieldError('email')}
+                    </p>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mật khẩu <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={onChange}
+                    required
+                    minLength={6}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      getFieldError('password') ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {getFieldError('password') && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {getFieldError('password')}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Họ và tên <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="full_name"
+                value={formData.full_name}
+                onChange={onChange}
+                required
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                  getFieldError('full_name') ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {getFieldError('full_name') && (
+                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {getFieldError('full_name')}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Số điện thoại <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={onChange}
+                required
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                  getFieldError('phone') ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {getFieldError('phone') && (
+                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {getFieldError('phone')}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Khoa <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="department_id"
+                value={formData.department_id}
+                onChange={onChange}
+                required
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                  getFieldError('department_id') ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Chọn khoa</option>
+                {departments.map(dept => (
+                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                ))}
+              </select>
+              {getFieldError('department_id') && (
+                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {getFieldError('department_id')}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Chuyên khoa</label>
+              <input
+                type="text"
+                name="specialization"
+                value={formData.specialization}
+                onChange={onChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Số chứng chỉ hành nghề <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="license_number"
+                value={formData.license_number}
+                onChange={onChange}
+                required
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                  getFieldError('license_number') ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {getFieldError('license_number') && (
+                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {getFieldError('license_number')}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Số năm kinh nghiệm</label>
+              <input
+                type="number"
+                name="experience_years"
+                value={formData.experience_years}
+                onChange={onChange}
+                min="0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Phí khám (VNĐ)</label>
+              <input
+                type="number"
+                name="consultation_fee"
+                value={formData.consultation_fee}
+                onChange={onChange}
+                min="0"
+                step="1000"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Trình độ học vấn</label>
+              <textarea
+                name="education"
+                value={formData.education}
+                onChange={onChange}
+                rows="2"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tiểu sử</label>
+              <textarea
+                name="biography"
+                value={formData.biography}
+                onChange={onChange}
+                rows="3"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">URL Ảnh đại diện</label>
+              <input
+                type="url"
+                name="avatar_url"
+                value={formData.avatar_url}
+                onChange={onChange}
+                placeholder="https://example.com/avatar.jpg"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="flex items-center gap-2">
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                  type="checkbox"
+                  name="is_available"
+                  checked={formData.is_available}
                   onChange={onChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-5 h-5 text-blue-600 rounded"
                 />
+                <span className="text-sm font-medium text-gray-700">Đang hoạt động</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Show general errors */}
+          {Object.keys(validationErrors).length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <p className="font-semibold text-red-800 mb-2">Vui lòng kiểm tra lại:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-red-700">
+                    {Object.entries(validationErrors).map(([field, errors]) => (
+                      <li key={field}>
+                        {Array.isArray(errors) ? errors[0] : errors}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mật khẩu <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={onChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </>
+            </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Họ và tên <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="full_name"
-              value={formData.full_name}
-              onChange={onChange}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại</label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={onChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Khoa <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="department_id"
-              value={formData.department_id}
-              onChange={onChange}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
-              <option value="">Chọn khoa</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id}>{dept.name}</option>
-              ))}
-            </select>
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <Loader size={16} className="animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                <>{isEdit ? 'Cập nhật' : 'Thêm mới'}</>
+              )}
+            </button>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Chuyên khoa</label>
-            <input
-              type="text"
-              name="specialization"
-              value={formData.specialization}
-              onChange={onChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Số chứng chỉ hành nghề <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="license_number"
-              value={formData.license_number}
-              onChange={onChange}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Số năm kinh nghiệm</label>
-            <input
-              type="number"
-              name="experience_years"
-              value={formData.experience_years}
-              onChange={onChange}
-              min="0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Phí khám (VNĐ)</label>
-            <input
-              type="number"
-              name="consultation_fee"
-              value={formData.consultation_fee}
-              onChange={onChange}
-              min="0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Trình độ học vấn</label>
-            <textarea
-              name="education"
-              value={formData.education}
-              onChange={onChange}
-              rows="2"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tiểu sử</label>
-            <textarea
-              name="biography"
-              value={formData.biography}
-              onChange={onChange}
-              rows="3"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">URL Ảnh đại diện</label>
-            <input
-              type="url"
-              name="avatar_url"
-              value={formData.avatar_url}
-              onChange={onChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="col-span-2">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                name="is_available"
-                checked={formData.is_available}
-                onChange={onChange}
-                className="w-5 h-5 text-blue-600 rounded"
-              />
-              <span className="text-sm font-medium text-gray-700">Đang hoạt động</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="flex gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            {isEdit ? 'Cập nhật' : 'Thêm mới'}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const StatCard = ({ label, value, color }) => {
   const colors = {
