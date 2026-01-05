@@ -13,24 +13,22 @@ use Illuminate\Support\Facades\DB;
 
 class AdminDoctorController extends Controller
 {
-    /**
-     * Lấy danh sách bác sĩ
-     */
+    // Lấy tất cả bác sĩ với phân trang, lọc, tìm kiếm và sắp xếp
     public function index(Request $request)
     {
         $query = Doctor::with(['department', 'user']);
 
-        // Filter by department
+        // loc theo khoa
         if ($request->has('department_id')) {
             $query->where('department_id', $request->department_id);
         }
 
-        // Filter by availability
+        // loc theo trạng thái sẵn có
         if ($request->has('is_available')) {
             $query->where('is_available', $request->is_available);
         }
 
-        // Search
+        // Tìm kiếm theo tên, số điện thoại, chuyên môn
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -40,7 +38,7 @@ class AdminDoctorController extends Controller
             });
         }
 
-        // Sort
+       // Sắp xếp theo cột và thứ tự thời gian
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
@@ -81,10 +79,10 @@ class AdminDoctorController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
+        // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
         DB::beginTransaction();
         try {
-            // Create user account
+            // tạo user account
             $user = User::create([
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
@@ -92,7 +90,7 @@ class AdminDoctorController extends Controller
                 'is_active' => true,
             ]);
 
-            // Create doctor profile
+            // tạo doctor profile
             $doctor = Doctor::create([
                 'user_id' => $user->id,
                 'full_name' => $request->full_name,
@@ -115,7 +113,7 @@ class AdminDoctorController extends Controller
                 'message' => 'Thêm bác sĩ mới thành công!',
                 'data' => $doctor->load(['department', 'user'])
             ], 201);
-        } catch (\Exception $e) {
+        } catch (\Exception $e) { // Nếu có lỗi, rollback transaction
             DB::rollBack();
             return response()->json([
                 'success' => false,
@@ -124,10 +122,7 @@ class AdminDoctorController extends Controller
         }
     }
 
-    /**
-     * Xem chi tiết bác sĩ - FIXED VERSION
-     * Query trực tiếp từ bảng appointments để đảm bảo dữ liệu chính xác
-     */
+    // xem chi tiết bác sĩ
     public function show($id)
     {
         try {
@@ -138,17 +133,17 @@ class AdminDoctorController extends Controller
             
             // Đảm bảo lấy dữ liệu chính xác từ database
             $stats = [
-                'total_appointments' => Appointment::where('doctor_id', $id)->count(),
+                'total_appointments' => Appointment::where('doctor_id', $id)->count(), // Tổng số lịch hẹn
                 
-                'completed_appointments' => Appointment::where('doctor_id', $id)
+                'completed_appointments' => Appointment::where('doctor_id', $id) // Số lịch hẹn đã hoàn thành
                     ->where('status', 'completed')
                     ->count(),
                 
-                'pending_appointments' => Appointment::where('doctor_id', $id)
+                'pending_appointments' => Appointment::where('doctor_id', $id) // Số lịch hẹn sắp tới
                     ->whereIn('status', ['pending', 'confirmed'])
                     ->count(),
                 
-                'cancelled_appointments' => Appointment::where('doctor_id', $id)
+                'cancelled_appointments' => Appointment::where('doctor_id', $id) // Số lịch hẹn đã hủy
                     ->where('status', 'cancelled')
                     ->count(),
             ];
@@ -174,7 +169,7 @@ class AdminDoctorController extends Controller
     public function update(Request $request, $id)
     {
         $doctor = Doctor::findOrFail($id);
-
+        // Validate đầu vào nếu sai trả về lỗi
         $validator = Validator::make($request->all(), [
             'full_name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|string|max:20',
@@ -238,9 +233,7 @@ class AdminDoctorController extends Controller
         }
     }
 
-    /**
-     * Toggle availability
-     */
+    // Chặn/Mở chặn bác sĩ
     public function toggleAvailability($id)
     {
         $doctor = Doctor::findOrFail($id);
@@ -253,17 +246,14 @@ class AdminDoctorController extends Controller
             'data' => $doctor
         ]);
     }
-
-    /**
-     * Get doctor statistics
-     */
+// Thống kê bác sĩ
     public function getStatistics()
     {
         $stats = [
             'total' => Doctor::count(),
-            'available' => Doctor::where('is_available', true)->count(),
-            'unavailable' => Doctor::where('is_available', false)->count(),
-            'by_department' => Doctor::select('department_id', DB::raw('count(*) as count'))
+            'available' => Doctor::where('is_available', true)->count(),// Số bác sĩ đang làm việc
+            'unavailable' => Doctor::where('is_available', false)->count(),// Số bác sĩ không làm việc
+            'by_department' => Doctor::select('department_id', DB::raw('count(*) as count'))// Thống kê theo khoa
                 ->groupBy('department_id')
                 ->with('department:id,name')
                 ->get(),

@@ -9,14 +9,12 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminPatientController extends Controller
 {
-    /**
-     * Lấy danh sách bệnh nhân
-     */
+   // Lấy tất cả bệnh nhân
     public function index(Request $request)
     {
         $query = Patient::with('user');
 
-        // Search
+        // tìm kiếm theo tên hoặc số điện thoại hoặc số bảo hiểm
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -26,12 +24,12 @@ class AdminPatientController extends Controller
             });
         }
 
-        // Filter by gender
+        // lọc theo giới tính
         if ($request->has('gender')) {
             $query->where('gender', $request->gender);
         }
 
-        // Sort
+        // sắp xếp theo cột và thứ tự thời gian
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
@@ -45,9 +43,7 @@ class AdminPatientController extends Controller
         ]);
     }
 
-    /**
-     * Xem chi tiết bệnh nhân
-     */
+   // xem chi tiết bệnh nhân và lịch sử lịch hẹn
 public function show($id)
 {
     try {
@@ -56,7 +52,7 @@ public function show($id)
         // Kiểm tra xem model có relationship 'appointments' không
         $appointments = $patient->appointments()
             ->with(['doctor', 'department'])
-            ->orderBy('appointment_time', 'desc')
+            ->orderBy('appointment_time', 'desc')// sắp xếp theo thời gian cuộc hẹn mới nhất
             ->get();
 
         return response()->json([
@@ -79,11 +75,9 @@ public function show($id)
     }
 }
 
-    /**
-     * Cập nhật thông tin bệnh nhân
-     */
+   // Cập nhật thông tin bệnh nhân
     public function update(Request $request, $id)
-    {
+    {     // Validate đầu vào 
         $validator = Validator::make($request->all(), [
             'full_name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|string|max:20',
@@ -104,7 +98,7 @@ public function show($id)
         }
 
         $patient = Patient::findOrFail($id);
-        $patient->update($validator->validated());
+        $patient->update($validator->validated());// Cập nhật thông tin bệnh nhân
 
         return response()->json([
             'success' => true,
@@ -113,14 +107,12 @@ public function show($id)
         ]);
     }
 
-    /**
-     * Xóa bệnh nhân
-     */
+  // Xóa bệnh nhân
     public function destroy($id)
     {
         $patient = Patient::findOrFail($id);
         
-        // Check if patient has appointments
+       // Kiểm tra nếu bệnh nhân có lịch hẹn thì không cho xóa
         if ($patient->appointments()->count() > 0) {
             return response()->json([
                 'success' => false,
@@ -136,9 +128,7 @@ public function show($id)
         ]);
     }
 
-    /**
-     * Get patient statistics
-     */
+    // Thống kê bệnh nhân
     public function getStatistics()
     {
         $total = Patient::count();
@@ -156,14 +146,12 @@ public function show($id)
             'data' => $stats
         ]);
     }
-    /**
- * Chặn/Mở chặn bệnh nhân
- */
+
 public function toggleBlock($id)
 {
     $patient = Patient::findOrFail($id);
     
-    // Assuming you have is_blocked column
+  
     $patient->is_blocked = !$patient->is_blocked;
     $patient->save();
 

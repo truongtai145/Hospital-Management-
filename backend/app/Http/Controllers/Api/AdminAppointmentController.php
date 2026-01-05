@@ -14,24 +14,24 @@ class AdminAppointmentController extends Controller
      
     public function index(Request $request)
     {
-      $query = Appointment::with(['patient', 'doctor.department']);
+      $query = Appointment::with(['patient', 'doctor.department']);// kiểm tra mối quan hệ với patient và doctor.department
 
-        // Filter by status
+        // loc theo trạng thái
         if ($request->has('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        // Filter by date
+        // loc theo ngày
         if ($request->has('date')) {
             $query->whereDate('appointment_time', $request->date);
         }
 
-        // Filter by doctor
+        // loc theo bác sĩ
         if ($request->has('doctor_id')) {
             $query->where('doctor_id', $request->doctor_id);
         }
 
-        // Search
+        // tìm kiếm theo tên bệnh nhân hoặc số điện thoại
         if ($request->has('search')) {
             $search = $request->search;
             $query->whereHas('patient', function ($q) use ($search) {
@@ -40,7 +40,7 @@ class AdminAppointmentController extends Controller
             });
         }
 
-        // Sort
+        // săp xếp theo cột và thứ tự thời gian
         $sortBy = $request->get('sort_by', 'appointment_time');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
@@ -58,7 +58,7 @@ class AdminAppointmentController extends Controller
     // xem chi tiet lich
     public function show($id)
     {
-        $appointment = Appointment::with(['patient', 'doctor.department'])
+        $appointment = Appointment::with(['patient', 'doctor.department']) // truy xuất lịch hẹn theo id
             ->findOrFail($id);
 
         return response()->json([
@@ -86,7 +86,7 @@ class AdminAppointmentController extends Controller
             ], 422);
         }
 
-        $appointment = Appointment::findOrFail($id);
+        $appointment = Appointment::findOrFail($id); 
         $appointment->update($validator->validated());
 
         return response()->json([
@@ -127,7 +127,7 @@ class AdminAppointmentController extends Controller
         }
 
         Appointment::whereIn('id', $request->appointment_ids)
-            ->update(['status' => $request->status]);
+            ->update(['status' => $request->status]); // Cập nhật trạng thái
 
         return response()->json([
             'success' => true,
@@ -135,13 +135,11 @@ class AdminAppointmentController extends Controller
         ]);
     }
 
-    /**
-     * Get statistics
-     */
+   // Thống kê lịch hẹn
     public function getStatistics(Request $request)
     {
         $query = Appointment::query();
-
+        
         if ($request->has('start_date') && $request->has('end_date')) {
             $query->whereBetween('appointment_time', [
                 $request->start_date,

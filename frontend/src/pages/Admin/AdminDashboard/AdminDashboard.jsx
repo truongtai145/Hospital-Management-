@@ -41,10 +41,6 @@ const AdminDashboard = () => {
   const [recentAppointments, setRecentAppointments] = useState([]);
   const [period, setPeriod] = useState('today');
   const [error, setError] = useState(null);
-  const [paymentStats, setPaymentStats] = useState({
-    total_revenue: 0,
-    completed_payments: 0,
-  });
 
   useEffect(() => {
     fetchDashboardData();
@@ -56,25 +52,11 @@ const AdminDashboard = () => {
     setError(null);
     
     try {
-      const requests = [
+      const [statsRes, chartRes, appointmentsRes] = await Promise.all([
         api.get(`/admin/dashboard/stats?period=${period}`),
         api.get(`/admin/dashboard/chart?period=${period}`),
         api.get('/admin/dashboard/recent-appointments')
-      ];
-
-      // Thêm payment stats request nếu period = 'today'
-      if (period === 'today') {
-        const today = new Date();
-        const startDate = `${today.toISOString().slice(0, 10)} 00:00:00`;
-        const endDate = `${today.toISOString().slice(0, 10)} 23:59:59`;
-        const params = new URLSearchParams({ 
-          start_date: startDate, 
-          end_date: endDate 
-        });
-        requests.push(api.get(`/admin/payments/statistics/overview?${params}`));
-      }
-
-      const [statsRes, chartRes, appointmentsRes, ...paymentRes] = await Promise.all(requests);
+      ]);
 
       if (statsRes.data.success) {
         setStats(statsRes.data.data);
@@ -86,10 +68,6 @@ const AdminDashboard = () => {
 
       if (appointmentsRes.data.success) {
         setRecentAppointments(appointmentsRes.data.data);
-      }
-
-      if (period === 'today' && paymentRes[0]?.data?.success) {
-        setPaymentStats(paymentRes[0].data.data);
       }
     } catch (error) {
       console.error('Fetch dashboard error:', error);
@@ -132,7 +110,8 @@ const AdminDashboard = () => {
     );
   }
 
-  // Xây dựng statsCards với dữ liệu thực
+  // Xây dựng statsCards với dữ liệu từ backend
+  // Backend đã loại bỏ lịch hẹn cancelled và tính doanh thu theo payment_date
   const statsCards = [
     { 
       label: period === 'today' ? "Lịch khám hôm nay" : period === 'week' ? "Lịch khám tuần này" : "Lịch khám tháng này",
@@ -144,13 +123,9 @@ const AdminDashboard = () => {
       trendValue: Math.abs(stats?.appointments?.trend || 0)
     },
     { 
-      label: period === 'today' ? "Doanh thu ngày" : period === 'week' ? "Doanh thu tuần" : "Doanh thu tháng",
-      value: period === 'today' 
-        ? formatCurrency(paymentStats.total_revenue)
-        : formatCurrency(stats?.revenue?.total || 0), 
-      desc: period === 'today'
-        ? `${paymentStats.completed_payments || 0} hóa đơn đã thanh toán`
-        : `Trung bình ${formatCurrency(stats?.revenue?.average || 0)}/lượt`, 
+      label: period === 'today' ? "Doanh thu hôm nay" : period === 'week' ? "Doanh thu tuần" : "Doanh thu tháng",
+      value: formatCurrency(stats?.revenue?.total || 0), 
+      desc: `Trung bình ${formatCurrency(stats?.revenue?.average || 0)}/lượt`, 
       icon: DollarSign, 
       color: "bg-green-100 text-green-600",
       trend: stats?.revenue?.trend >= 0 ? 'up' : 'down',
@@ -261,7 +236,7 @@ const AdminDashboard = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* Biểu đồ lượt khám */}
+          {/* Biểu đồ lượt khám (không bao gồm lịch đã hủy) */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-gray-800">
@@ -324,7 +299,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Biểu đồ doanh thu */}
+          {/* Biểu đồ doanh thu (theo thời gian thanh toán thực tế) */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-gray-800">
@@ -394,7 +369,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Appointments */}
+        {/* Recent Appointments (không bao gồm lịch đã hủy) */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-800">Lịch hẹn gần đây</h2>
@@ -420,7 +395,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentAppointments.slice(0, 8).map((app, idx) => (
+                  {recentAppointments.slice(0, 5).map((app, idx) => (
                     <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="py-4 px-4 text-sm font-bold text-blue-600">{app.code}</td>
                       <td className="py-4 px-4 text-sm font-medium text-gray-800">{app.patient}</td>

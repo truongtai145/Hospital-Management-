@@ -173,7 +173,7 @@ class AppointmentController extends Controller
     }
 
     
-    public function update(Request $request, Appointment $appointment)
+ public function update(Request $request, Appointment $appointment)
 {
     $validator = Validator::make($request->all(), [
         'status' => 'sometimes|in:pending,confirmed,completed,cancelled,no_show',
@@ -195,13 +195,17 @@ class AppointmentController extends Controller
         $existingPayment = \App\Models\Payment::where('appointment_id', $appointment->id)->first();
         
         if (!$existingPayment) {
-            // Tạo payment với medication_cost = 0 (admin sẽ cập nhật sau)
+           
+            $consultationFee = $appointment->doctor->consultation_fee ?? 0;
+            $medicationCost = 0;
+            
             \App\Models\Payment::create([
                 'appointment_id' => $appointment->id,
                 'patient_id' => $appointment->patient_id,
-                'consultation_fee' => $appointment->doctor->consultation_fee ?? 0,
-                'medication_cost' => 0, // Admin sẽ nhập sau
-                'amount' => $appointment->doctor->consultation_fee ?? 0,
+                'consultation_fee' => $consultationFee,
+                'medication_cost' => $medicationCost,
+                'sub_total' => $consultationFee + $medicationCost, 
+                'amount' => $consultationFee + $medicationCost,
                 'payment_method' => null,
                 'status' => 'pending',
                 'transaction_id' => 'INV-' . strtoupper(\Illuminate\Support\Str::random(10)),
@@ -213,7 +217,7 @@ class AppointmentController extends Controller
     return response()->json([
         'success' => true,
         'message' => 'Cập nhật lịch hẹn thành công!',
-        'data' => $appointment
+        'data' => $appointment->load(['doctor.department', 'patient.user'])
     ]);
 }
    // Hủy một lịch hẹn.

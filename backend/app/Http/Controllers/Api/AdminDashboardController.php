@@ -28,33 +28,33 @@ class AdminDashboardController extends Controller
         // Xác định kỳ trước để so sánh
         [$previousStart, $previousEnd] = $this->getPreviousPeriod($period);
 
-      // appointments
-        // Kỳ hiện tại
+        // ============ APPOINTMENTS ============
+        // Chỉ tính các lịch hẹn KHÔNG bị hủy
         $appointmentStats = Appointment::select(
                 DB::raw('COUNT(*) as total'),
                 DB::raw('SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending')
             )
+            ->where('status', '!=', 'cancelled') // Loại bỏ lịch đã hủy
             ->whereBetween('appointment_time', [$startDate, $endDate])
             ->first();
         
         $currentAppointments = $appointmentStats->total ?? 0;
         $pendingAppointments = $appointmentStats->pending ?? 0;
 
-        // Kỳ trước
-        $previousAppointments = Appointment::whereBetween('appointment_time', [$previousStart, $previousEnd])->count();
+        $previousAppointments = Appointment::where('status', '!=', 'cancelled')
+            ->whereBetween('appointment_time', [$previousStart, $previousEnd])
+            ->count();
         
-        // Tính % thay đổi
         $appointmentTrend = $this->calculateTrend($currentAppointments, $previousAppointments);
 
-        //revenue
-        // Revenue kỳ hiện tại - từ bảng payments
+        // ============ REVENUE ============
+        // SỬ DỤNG payment_date THAY VÌ created_at
         $currentRevenue = Payment::where('status', 'completed')
-            ->whereBetween(DB::raw('COALESCE(payment_date, created_at)'), [$startDate, $endDate])
+            ->whereBetween('payment_date', [$startDate, $endDate])
             ->sum('total_amount') ?? 0;
 
-        // Revenue kỳ trước
         $previousRevenue = Payment::where('status', 'completed')
-            ->whereBetween(DB::raw('COALESCE(payment_date, created_at)'), [$previousStart, $previousEnd])
+            ->whereBetween('payment_date', [$previousStart, $previousEnd])
             ->sum('total_amount') ?? 0;
 
         $revenueTrend = $this->calculateTrend($currentRevenue, $previousRevenue);
@@ -64,11 +64,9 @@ class AdminDashboardController extends Controller
             ? round($currentRevenue / $currentAppointments) 
             : 0;
 
-     
-        // Bệnh nhân mới kỳ hiện tại
+        // ============ PATIENTS ============
         $newPatients = Patient::whereBetween('created_at', [$startDate, $endDate])->count();
         
-        // Bệnh nhân mới kỳ trước
         $previousNewPatients = Patient::whereBetween('created_at', [$previousStart, $previousEnd])->count();
         
         $patientsTrend = $this->calculateTrend($newPatients, $previousNewPatients);
@@ -83,7 +81,6 @@ class AdminDashboardController extends Controller
         $activeDoctors = $doctorStats->active ?? 0;
         $totalDoctors = $doctorStats->total ?? 0;
 
-        // Doctors trend - so với số bác sĩ active kỳ trước
         $previousActiveDoctors = Doctor::where('is_available', true)
             ->where('created_at', '<', $startDate)
             ->count();
@@ -116,7 +113,6 @@ class AdminDashboardController extends Controller
         ]);
     }
 
-    // Lấy khoảng thời gian của kỳ trước dựa trên kỳ hiện tại
     private function getPreviousPeriod($period)
     {
         return match($period) {
@@ -134,7 +130,7 @@ class AdminDashboardController extends Controller
             ],
         };
     }
-// Tính phần trăm thay đổi giữa kỳ hiện tại và kỳ trước
+
     private function calculateTrend($current, $previous)
     {
         if ($previous == 0) {
@@ -152,21 +148,24 @@ class AdminDashboardController extends Controller
             $today = Carbon::today();
             $todayEnd = Carbon::today()->endOfDay();
             
+            // Chỉ tính lịch hẹn KHÔNG bị hủy
             $appointmentsData = Appointment::select(
                     DB::raw('HOUR(appointment_time) as hour'),
                     DB::raw('COUNT(*) as count')
                 )
+                ->where('status', '!=', 'cancelled') // Loại bỏ lịch đã hủy
                 ->whereBetween('appointment_time', [$today, $todayEnd])
                 ->groupBy('hour')
                 ->pluck('count', 'hour')
                 ->toArray();
             
+            // SỬ DỤNG payment_date THAY VÌ created_at
             $revenueData = Payment::select(
-                    DB::raw('HOUR(COALESCE(payment_date, created_at)) as hour'),
+                    DB::raw('HOUR(payment_date) as hour'),
                     DB::raw('SUM(total_amount) as total')
                 )
                 ->where('status', 'completed')
-                ->whereDate(DB::raw('COALESCE(payment_date, created_at)'), $today)
+                ->whereDate('payment_date', $today)
                 ->groupBy('hour')
                 ->pluck('total', 'hour')
                 ->toArray();
@@ -183,21 +182,24 @@ class AdminDashboardController extends Controller
             $startDate = Carbon::now()->startOfWeek();
             $endDate = Carbon::now()->endOfWeek();
             
+            // Chỉ tính lịch hẹn KHÔNG bị hủy
             $appointmentsData = Appointment::select(
                     DB::raw('DATE(appointment_time) as date'),
                     DB::raw('COUNT(*) as count')
                 )
+                ->where('status', '!=', 'cancelled') // Loại bỏ lịch đã hủy
                 ->whereBetween('appointment_time', [$startDate, $endDate])
                 ->groupBy('date')
                 ->pluck('count', 'date')
                 ->toArray();
             
+            // SỬ DỤNG payment_date THAY VÌ created_at
             $revenueData = Payment::select(
-                    DB::raw('DATE(COALESCE(payment_date, created_at)) as date'),
+                    DB::raw('DATE(payment_date) as date'),
                     DB::raw('SUM(total_amount) as total')
                 )
                 ->where('status', 'completed')
-                ->whereBetween(DB::raw('COALESCE(payment_date, created_at)'), [$startDate, $endDate])
+                ->whereBetween('payment_date', [$startDate, $endDate])
                 ->groupBy('date')
                 ->pluck('total', 'date')
                 ->toArray();
@@ -226,11 +228,14 @@ class AdminDashboardController extends Controller
                 $weekStart = $monthStart->copy()->addWeeks($i);
                 $weekEnd = min($weekStart->copy()->endOfWeek(), $monthEnd);
                 
-                $appointments = Appointment::whereBetween('appointment_time', [$weekStart, $weekEnd])
+                // Chỉ tính lịch hẹn KHÔNG bị hủy
+                $appointments = Appointment::where('status', '!=', 'cancelled')
+                    ->whereBetween('appointment_time', [$weekStart, $weekEnd])
                     ->count();
                 
+                // SỬ DỤNG payment_date THAY VÌ created_at
                 $revenue = Payment::where('status', 'completed')
-                    ->whereBetween(DB::raw('COALESCE(payment_date, created_at)'), [$weekStart, $weekEnd])
+                    ->whereBetween('payment_date', [$weekStart, $weekEnd])
                     ->sum('total_amount');
                 
                 $data[] = [
@@ -249,7 +254,9 @@ class AdminDashboardController extends Controller
 
     public function getRecentAppointments()
     {
+        // Chỉ lấy các lịch hẹn KHÔNG bị hủy
         $appointments = Appointment::with(['patient', 'doctor'])
+            ->where('status', '!=', 'cancelled') // Loại bỏ lịch đã hủy
             ->orderBy('appointment_time', 'desc')
             ->limit(10)
             ->get()
@@ -281,8 +288,10 @@ class AdminDashboardController extends Controller
             'data' => [
                 'total_patients' => Patient::count(),
                 'total_doctors' => Doctor::count(),
-                'total_appointments' => Appointment::count(),
-                'today_appointments' => Appointment::whereDate('appointment_time', $today)->count(),
+                'total_appointments' => Appointment::where('status', '!=', 'cancelled')->count(),
+                'today_appointments' => Appointment::where('status', '!=', 'cancelled')
+                    ->whereDate('appointment_time', $today)
+                    ->count(),
                 'pending_appointments' => Appointment::where('status', 'pending')->count(),
                 'completed_today' => Appointment::whereDate('appointment_time', $today)
                     ->where('status', 'completed')

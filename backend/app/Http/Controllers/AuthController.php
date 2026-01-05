@@ -18,9 +18,7 @@ use Firebase\JWT\Key;
 
 class AuthController extends Controller
 {
-    /**
-     * Đăng ký tài khoản mới
-     */
+    // Đăng ký người dùng mới (bệnh nhân)
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -79,9 +77,7 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Đăng nhập với JWT
-     */
+    // Đăng nhập với JWT
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -153,9 +149,7 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Refresh access token
-     */
+   // Làm mới JWT bằng Refresh Token
     public function refresh(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -178,7 +172,7 @@ class AuthController extends Controller
         if (!$refreshToken) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid or expired refresh token'
+                'message' => 'token không hợp lệ hoặc đã hết hạn'
             ], 401);
         }
 
@@ -187,7 +181,7 @@ class AuthController extends Controller
         if (!$user->is_active) {
             return response()->json([
                 'success' => false,
-                'message' => 'User account is inactive'
+                'message' => 'Tài khoản đã bị khóa'
             ], 403);
         }
 
@@ -202,9 +196,7 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Gửi email reset password
-     */
+    // Quên mật khẩu - Gửi email xác thực
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -268,9 +260,7 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Xác thực OTP code
-     */
+    // Xác minh mã xác thực đặt lại mật khẩu
     public function verifyResetToken(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -314,9 +304,7 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Reset password với token đã verify
-     */
+  // Đặt lại mật khẩu
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -389,10 +377,7 @@ class AuthController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Tạo JWT Access Token
-     */
+// Tạo JWT Access Token
    private function createAccessToken(User $user)
 {
     $jwtSecret = env('JWT_SECRET');
@@ -414,9 +399,7 @@ class AuthController extends Controller
     return JWT::encode($payload, $jwtSecret, 'HS256');
 }
 
-    /**
-     * Tạo Refresh Token
-     */
+    // Tạo Refresh Token và lưu vào DB
     private function createRefreshToken(User $user, Request $request)
     {
         return RefreshToken::create([

@@ -55,7 +55,7 @@ const AppointmentDetail = () => {
     setError(null);
     
     try {
-      // ✅ SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
+      //  SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
       const response = await api.get(`/doctor/appointments/${id}`);
       
       if (response.data.success) {
@@ -139,7 +139,7 @@ const AppointmentDetail = () => {
     setSaving(true);
     
     try {
-      // ✅ SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
+      //  SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
       const response = await api.put(`/doctor/appointments/${id}`, formData);
       
       if (response.data.success) {
@@ -167,7 +167,7 @@ const AppointmentDetail = () => {
 
     setSaving(true);
     try {
-      // ✅ SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
+      // SỬ DỤNG ĐÚNG ENDPOINT CHO BÁC SĨ
       const response = await api.put(`/doctor/appointments/${id}`, {
         status: newStatus
       });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, CheckCircle, X, Clock, Loader, Shield } from 'lucide-react';
+import { DollarSign, CheckCircle, X, Loader, Shield } from 'lucide-react';
 import AdminLayout from '../Components/AdminLayout';
 import { api } from '../../../api/axios';
 import { toast } from 'react-toastify';
@@ -62,10 +62,12 @@ const AdminPayments = () => {
   const fetchPayments = async () => {
     setLoading(true);
     try {
+      // LỌC THEO payment_date THAY VÌ created_at
       const params = new URLSearchParams({
         page: currentPage,
         per_page: 5,
         ...(filterStatus !== 'all' && { status: filterStatus }),
+        payment_date: selectedDate, // Thêm filter theo ngày thanh toán
       });
       
       const response = await api.get(`/admin/payments?${params}`);
@@ -85,7 +87,7 @@ const AdminPayments = () => {
 
   const fetchStatistics = async () => {
     try {
-      // Tính start/end theo ngày chọn
+      // TÍNH DOANH THU THEO payment_date
       const startDate = `${selectedDate} 00:00:00`;
       const endDate = `${selectedDate} 23:59:59`;
 
@@ -111,6 +113,7 @@ const AdminPayments = () => {
       if (response.data.success) {
         toast.success('Đã xác nhận thanh toán!');
         fetchPayments();
+        fetchStatistics(); // Cập nhật lại thống kê
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Xác nhận thất bại');
@@ -125,6 +128,7 @@ const AdminPayments = () => {
       if (response.data.success) {
         toast.success('Đã hủy hóa đơn!');
         fetchPayments();
+        fetchStatistics(); // Cập nhật lại thống kê
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Hủy thất bại');
@@ -160,7 +164,7 @@ const AdminPayments = () => {
 
           <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Ngày:</span>
+              <span className="text-sm text-gray-600">Ngày thanh toán:</span>
               <input
                 type="date"
                 value={selectedDate}
@@ -189,81 +193,93 @@ const AdminPayments = () => {
           </div>
         ) : (
           <div className="bg-white rounded-xl border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="p-4 text-left">Mã HĐ</th>
-                    <th className="p-4 text-left">Bệnh nhân</th>
-                    <th className="p-4 text-left">Số tiền</th>
-                    <th className="p-4 text-left">Phương thức</th>
-                    <th className="p-4 text-center">Trạng thái</th>
-                    <th className="p-4 text-center">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50">
-                      <td className="p-4 font-medium">#{payment.transaction_id}</td>
-                      <td className="p-4">
-                        <p className="font-medium">{payment.patient?.full_name}</p>
-                        <p className="text-xs text-gray-500">{payment.patient?.phone}</p>
-                      </td>
-                      <td className="p-4">
-                        <p className="font-bold text-green-600">{formatCurrency(payment.total_amount)}</p>
-                        {payment.discount > 0 && (
-                          <p className="text-xs text-gray-500 flex items-center gap-1">
-                            <Shield size={12} /> Giảm {formatCurrency(payment.discount)}
-                          </p>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {payment.payment_method === 'cash' ? 'Tiền mặt' :
-                         payment.payment_method === 'vnpay' ? 'VNPay' :
-                         payment.payment_method || '-'}
-                      </td>
-                      <td className="p-4 text-center">
-                        <StatusBadge status={payment.status} />
-                      </td>
-                      <td className="p-4">
-                        <div className="flex justify-center gap-2">
-                          {payment.status === 'processing' && (
-                            <>
-                              <button
-                                onClick={() => handleConfirm(payment.id)}
-                                className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"
-                                title="Xác nhận"
-                              >
-                                <CheckCircle size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleCancel(payment.id)}
-                                className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
-                                title="Hủy"
-                              >
-                                <X size={16} />
-                              </button>
-                            </>
-                          )}
-                          {payment.status === 'completed' && (
-                            <span className="text-green-600 text-sm">
-                              {formatDate(payment.payment_date)}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {payments.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <p>Không có hóa đơn nào trong ngày {formatDate(selectedDate)}</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="p-4 text-left">Mã HĐ</th>
+                        <th className="p-4 text-left">Bệnh nhân</th>
+                        <th className="p-4 text-left">Số tiền</th>
+                        <th className="p-4 text-left">Phương thức</th>
+                        <th className="p-4 text-left">Ngày TT</th>
+                        <th className="p-4 text-center">Trạng thái</th>
+                        <th className="p-4 text-center">Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {payments.map((payment) => (
+                        <tr key={payment.id} className="hover:bg-gray-50">
+                          <td className="p-4 font-medium">#{payment.transaction_id}</td>
+                          <td className="p-4">
+                            <p className="font-medium">{payment.patient?.full_name}</p>
+                            <p className="text-xs text-gray-500">{payment.patient?.phone}</p>
+                          </td>
+                          <td className="p-4">
+                            <p className="font-bold text-green-600">{formatCurrency(payment.total_amount)}</p>
+                            {payment.discount > 0 && (
+                              <p className="text-xs text-gray-500 flex items-center gap-1">
+                                <Shield size={12} /> Giảm {formatCurrency(payment.discount)}
+                              </p>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            {payment.payment_method === 'cash' ? 'Tiền mặt' :
+                             payment.payment_method === 'vnpay' ? 'VNPay' :
+                             payment.payment_method || '-'}
+                          </td>
+                          <td className="p-4">
+                            {payment.payment_date ? formatDate(payment.payment_date) : '-'}
+                          </td>
+                          <td className="p-4 text-center">
+                            <StatusBadge status={payment.status} />
+                          </td>
+                          <td className="p-4">
+                            <div className="flex justify-center gap-2">
+                              {payment.status === 'processing' && (
+                                <>
+                                  <button
+                                    onClick={() => handleConfirm(payment.id)}
+                                    className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"
+                                    title="Xác nhận"
+                                  >
+                                    <CheckCircle size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleCancel(payment.id)}
+                                    className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
+                                    title="Hủy"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </>
+                              )}
+                              {payment.status === 'completed' && (
+                                <span className="text-green-600 text-sm">
+                                  ✓ Hoàn tất
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-            {/* Pagination */}
-            <Pagination
-              currentPage={currentPage}
-              lastPage={lastPage}
-              onPageChange={setCurrentPage}
-            />
+                {/* Pagination */}
+                <Pagination
+                  currentPage={currentPage}
+                  lastPage={lastPage}
+                  onPageChange={setCurrentPage}
+                />
+              </>
+            )}
           </div>
         )}
       </div>

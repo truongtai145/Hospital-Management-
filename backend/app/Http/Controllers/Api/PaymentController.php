@@ -12,10 +12,6 @@ use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
-    /**
-     * Tạo hoặc cập nhật hóa đơn từ appointment (Admin)
-     * POST /api/v1/admin/payments/create-or-update
-     */
     public function createOrUpdatePayment(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -41,7 +37,6 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            // Tính toán
             $consultationFee = $appointment->doctor->consultation_fee ?? 0;
             $medicationCost = $request->medication_cost;
             $subTotal = $consultationFee + $medicationCost;
@@ -53,11 +48,9 @@ class PaymentController extends Controller
 
             $totalAmount = $subTotal - $discount;
 
-            // Kiểm tra xem đã có hóa đơn chưa
             $payment = Payment::where('appointment_id', $appointment->id)->first();
 
             if ($payment) {
-                // Cập nhật hóa đơn hiện có
                 if ($payment->status === 'completed') {
                     return response()->json([
                         'success' => false,
@@ -74,7 +67,6 @@ class PaymentController extends Controller
 
                 $message = 'Cập nhật hóa đơn thành công!';
             } else {
-                // Tạo hóa đơn mới
                 $payment = Payment::create([
                     'appointment_id' => $appointment->id,
                     'patient_id' => $appointment->patient_id,
@@ -103,21 +95,27 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Lấy danh sách hóa đơn (Admin)
-     */
     public function index(Request $request)
     {
         $query = Payment::with(['appointment.doctor', 'patient']);
-
+        
+        // Lọc theo trạng thái
         if ($request->has('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
-
-        if ($request->has('payment_method')) {
+        
+        // LỌC THEO payment_date THAY VÌ created_at
+        if ($request->has('payment_date')) {
+            $date = $request->payment_date;
+            $query->whereDate('payment_date', $date);
+        }
+        
+        // Lọc theo phương thức thanh toán
+        if ($request->has('payment_method')) { 
             $query->where('payment_method', $request->payment_method);
         }
-
+        
+        // Tìm kiếm theo tên bệnh nhân hoặc số điện thoại
         if ($request->has('search')) {
             $search = $request->search;
             $query->whereHas('patient', function ($q) use ($search) {
@@ -125,8 +123,9 @@ class PaymentController extends Controller
                   ->orWhere('phone', 'like', "%{$search}%");
             });
         }
-
-        $sortBy = $request->get('sort_by', 'created_at');
+        
+        // Sắp xếp
+        $sortBy = $request->get('sort_by', 'payment_date');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
@@ -139,9 +138,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Xem chi tiết hóa đơn
-     */
     public function show($id)
     {
         $payment = Payment::with(['appointment.doctor.department', 'patient'])
@@ -153,9 +149,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Lấy hóa đơn theo appointment ID
-     */
     public function getByAppointment($appointmentId)
     {
         $payment = Payment::where('appointment_id', $appointmentId)
@@ -175,9 +168,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Bệnh nhân thanh toán
-     */
     public function processPayment(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -204,9 +194,8 @@ class PaymentController extends Controller
 
             $paymentMethod = $request->payment_method;
             
-            // Logic xử lý theo phương thức thanh toán
             if ($paymentMethod === 'cash') {
-                // Tiền mặt: Chuyển sang "processing" - chờ admin xác nhận
+                // Tiền mặt: chờ admin xác nhận
                 $payment->update([
                     'payment_method' => $paymentMethod,
                     'status' => 'processing',
@@ -215,19 +204,8 @@ class PaymentController extends Controller
                 
                 $message = 'Đã ghi nhận thanh toán bằng tiền mặt. Vui lòng chờ xác nhận từ quầy thu ngân.';
                 
-            } elseif ($paymentMethod === 'vnpay') {
-                // VNPay: Chuyển sang "completed" luôn (giả lập thanh toán thành công)
-                // Trong thực tế, bạn sẽ tích hợp với VNPay API
-                $payment->update([
-                    'payment_method' => $paymentMethod,
-                    'status' => 'completed',
-                    'payment_date' => now(),
-                ]);
-                
-                $message = 'Thanh toán VNPay thành công!';
-                
             } else {
-                // Các phương thức khác: Chuyển sang "completed"
+                // Các phương thức khác: hoàn thành ngay
                 $payment->update([
                     'payment_method' => $paymentMethod,
                     'status' => 'completed',
@@ -254,9 +232,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Admin xác nhận thanh toán (cho thanh toán tiền mặt)
-     */
     public function confirmPayment(Request $request, $id)
     {
         DB::beginTransaction();
@@ -272,6 +247,7 @@ class PaymentController extends Controller
 
             $payment->update([
                 'status' => 'completed',
+                // payment_date đã được set khi processPayment
             ]);
 
             DB::commit();
@@ -291,9 +267,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Lấy hóa đơn của bệnh nhân hiện tại
-     */
     public function getPatientPayments(Request $request)
     {
         $user = $request->user();
@@ -306,12 +279,11 @@ class PaymentController extends Controller
             ], 404);
         }
 
-        // Load đầy đủ relationships như AdminPaymentModal
         $payments = Payment::where('patient_id', $patient->id)
             ->with([
-                'patient',  // Thông tin bệnh nhân
-                'appointment.doctor.department',  // Thông tin bác sĩ và khoa
-                'appointment'  // Thông tin lịch hẹn (reason, doctor_notes, prescription)
+                'patient',
+                'appointment.doctor.department',
+                'appointment'
             ])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -322,9 +294,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Hủy hóa đơn (chỉ khi chưa thanh toán)
-     */
     public function cancel($id)
     {
         $payment = Payment::findOrFail($id);
@@ -344,22 +313,18 @@ class PaymentController extends Controller
         ]);
     }
 
-    /**
-     * Thống kê thanh toán
-     */
     public function getStatistics(Request $request)
     {
-        // Base query áp dụng filter ngày nếu có
         $baseQuery = Payment::query();
 
+        // LỌC THEO payment_date THAY VÌ created_at
         if ($request->has('start_date') && $request->has('end_date')) {
-            $baseQuery->whereBetween('created_at', [
+            $baseQuery->whereBetween('payment_date', [
                 $request->start_date,
                 $request->end_date
             ]);
         }
 
-        // Dùng clone để không làm "bẩn" query gốc
         $stats = [
             'total_revenue' => (clone $baseQuery)
                 ->where('status', 'completed')
