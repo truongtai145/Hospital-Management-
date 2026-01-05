@@ -90,8 +90,8 @@ class DepartmentController extends Controller
      
     public function destroy(Department $department)
     {
-        // Nhờ có `nullOnDelete` trong migration của doctors,
-        // khi xóa khoa, các bác sĩ thuộc khoa này sẽ có department_id = null.
+        
+        // khi xóa khoa,  bác sĩ thuộc khoa này  có department_id = null.
         $department->delete();
 
         return response()->json([

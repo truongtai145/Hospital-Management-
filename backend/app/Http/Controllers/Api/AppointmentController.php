@@ -20,9 +20,7 @@ class AppointmentController extends Controller
 
     $query = Appointment::with(['doctor.department', 'patient']);
 
-    /**
-     * 1. Nếu là bệnh nhân → chỉ lấy lịch hẹn của họ
-     */
+    // 1. Nếu là bệnh nhân , chỉ lấy lịch hẹn của chính mình
     if ($user->role === 'patient') {
         $patient = Patient::where('user_id', $user->id)->first();
 
@@ -33,9 +31,7 @@ class AppointmentController extends Controller
         $query->where('patient_id', $patient->id);
     }
 
-    /**
-     * 2. Nếu là bác sĩ → chỉ lấy lịch hẹn của bác sĩ đó
-     */
+   // 2. Nếu là bác sĩ, chỉ lấy lịch hẹn của chính mình
     if ($user->role === 'doctor') {
         $doctorProfile = Doctor::where('user_id', $user->id)->first();
 
@@ -45,17 +41,11 @@ class AppointmentController extends Controller
 
         $query->where('doctor_id', $doctorProfile->id);
     }
-
-    /**
-     * 3. Nếu có lọc theo ngày
-     */
+    // 3. Lọc theo ngày nếu có
     if ($request->has('date')) {
         $query->whereDate('appointment_time', $request->date);
     }
-
-    /**
-     * 4. Trả về danh sách lịch hẹn (sắp xếp tăng dần theo giờ)
-     */
+    // Lấy danh sách lịch hẹn và sắp xếp theo thời gian hẹn
     $appointments = $query->orderBy('appointment_time', 'asc')->get();
 
     return response()->json([
@@ -226,9 +216,7 @@ class AppointmentController extends Controller
         'data' => $appointment
     ]);
 }
-    /**
-     * Hủy một lịch hẹn. 
-     */
+   // Hủy một lịch hẹn.
     public function destroy(Appointment $appointment)
 {
     $user = Auth::user();
@@ -262,8 +250,8 @@ class AppointmentController extends Controller
     } 
     // Nếu thời gian còn lại dưới 24 tiếng
     else {
-        // Hiện tại, chúng ta sẽ trả về lỗi. 
-        // Logic "chờ admin duyệt" sẽ phức tạp hơn và cần một cột mới trong DB (ví dụ: `cancellation_request_status`)
+        
+       
         return response()->json([
             'success' => false,
             'message' => 'Không thể tự hủy lịch hẹn trong vòng 24 giờ trước giờ khám. Vui lòng liên hệ trực tiếp với phòng khám.'
@@ -285,17 +273,9 @@ public function checkAvailability(Request $request)
     $doctorId = $request->doctor_id;
     $date = Carbon::parse($request->date)->startOfDay();
 
-    /*Kiểm tra nếu là Chủ Nhật
-    if ($date->isSunday()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Phòng khám không làm việc vào Chủ Nhật.',
-            'data' => []
-        ]);
-    }
-        */
 
-    // Lấy tất cả lịch hẹn đã đặt (bao gồm cả pending, confirmed)
+
+    // Lấy tất cả lịch hẹn đã đặt 
     $bookedAppointments = Appointment::where('doctor_id', $doctorId)
         ->whereDate('appointment_time', $date)
         ->whereIn('status', ['pending', 'confirmed']) // Chỉ lấy lịch chưa hủy

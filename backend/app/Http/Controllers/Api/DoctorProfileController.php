@@ -57,7 +57,7 @@ class DoctorProfileController extends Controller
     {
         $user = Auth::user();
         
-        $doctorProfile = Doctor::where('user_id', $user->id)->firstOrFail();
+        $doctorProfile = Doctor::where('user_id', $user->id)->firstOrFail();//nếu không có trả lỗi 404
 
         $validator = Validator::make($request->all(), [
             'full_name' => 'sometimes|required|string|max:255',

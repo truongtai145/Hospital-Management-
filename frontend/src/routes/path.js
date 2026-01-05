@@ -34,6 +34,7 @@ export const PATHS = {
   ADMIN_PATIENTS: "/admin/patients",
   ADMIN_PATIENT_DETAIL: "/admin/patients/:id",
   ADMIN_PAYMENTS: "/admin/payments",
+  ADMIN_DEPARTMENTS: "/admin/departments",
   FORGOTPASSWORD: "/forgot-password",
   CHAT: "/chat",
   DOCTOR_CHAT: "/doctor-dashboard/chat",  

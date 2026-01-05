@@ -70,6 +70,9 @@ const AdminChat = lazy(() =>
 const AdminAppointmentDetail= lazy (() =>
   import("../pages/Admin/AdminDashboard/AdminAppointmentDetail")
 );
+const AdminDepartments= lazy (() =>
+  import("../pages/Admin/AdminDashboard/AdminDepartments")
+);
 
 export const ROUTES_CONFIG = [
   // --- AUTH ---
@@ -225,6 +228,13 @@ export const ROUTES_CONFIG = [
   {
     path: PATHS.ADMIN_CHAT,
     element: AdminChat,
+    layout: "none",
+    isPrivate: true,
+    roles: ["admin"],
+  },
+  {
+    path: PATHS.ADMIN_DEPARTMENTS,
+    element: AdminDepartments,
     layout: "none",
     isPrivate: true,
     roles: ["admin"],

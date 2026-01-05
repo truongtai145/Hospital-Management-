@@ -9,6 +9,7 @@ import {
   MessageSquare, 
   Star, 
   Settings,
+  Building2,
   LogOut 
 } from 'lucide-react';
 
@@ -18,6 +19,7 @@ const SideNav = ({ handleLogout }) => {
   const menuItems = [
     { name: 'Tổng quan', path: '/admin', icon: LayoutDashboard },
     { name: 'Đơn khám', path: '/admin/appointments', icon: ClipboardList },
+    {name: 'Khoa', path: '/admin/departments', icon: Building2 },
     { name: 'Bác sĩ', path: '/admin/doctors', icon: Stethoscope }, 
     { name: 'Bệnh nhân', path: '/admin/patients', icon: Users },  
     { name: 'Quản lý thanh toán', path: '/admin/payments', icon: ClipboardList },  
