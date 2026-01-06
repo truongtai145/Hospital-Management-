@@ -1,81 +1,52 @@
+// src/routes/RoutesConfig.jsx
 import { lazy } from "react";
 import { PATHS } from "./path";
+import { lazyLoadFromModule } from "./lazyLoadModule";
 
-// --- Lazy Load Pages ---
+// ==================== EAGER LOAD: Auth (nhỏ, cần nhanh) ====================
+import { Login, Register, ForgotPassword } from "../pages/auth";
+
+// ==================== EAGER LOAD: Public Pages (critical path) ====================
 const Home = lazy(() => import("../pages/Home"));
-const Login = lazy(() => import("../pages/auth/Login"));
-const Register = lazy(() => import("../pages/auth/Register"));
-const ForgotPassword = lazy(() => import("../pages/auth/ForgotPassword"));
 const ServicePage = lazy(() => import("../pages/Services/ServicePage"));
 const Doctor = lazy(() => import("../pages/Doctor/DoctorPage"));
 const AboutPage = lazy(() => import("../pages/About/AboutPage"));
 const ContactPage = lazy(() => import("../pages/Contact/ContactPage"));
 const NewsPage = lazy(() => import("../pages/Blog/BlogPage"));
 const SingleNewsPage = lazy(() => import("../pages/Blog/SingleNewsPage"));
-const PatientProfile = lazy(() => import("../pages/Patient/PatientProfile"));
-const Chat = lazy(() => import("../components/Chat/Chat"));
 const Appointment = lazy(() => import("../components/Appointment/Appointment"));
-const AdminDashboard = lazy(() =>
-  import("../pages/Admin/AdminDashboard/AdminDashboard")
-);
-const AppointmentHistory = lazy(() =>
-  import("../pages/Patient/AppointmentHistory")
-);
+const Chat = lazy(() => import("../components/Chat/Chat"));
 
-const DoctorLayout = lazy(() =>
-  import("../pages/Doctors/Components/DoctorLayout")
-);
-const DoctorDashboard = lazy(() =>
-  import("../pages/Doctors/DoctorDashboard/DoctorDashboard")
-);
-const DoctorProfile = lazy(() =>
-  import("../pages/Doctors/DoctorDashboard/DoctorProfile")
-);
-const DoctorAppointments = lazy(() =>
-  import("../pages/Doctors/DoctorDashboard/DoctorAppointments")
-);
-const AppointmentDetail = lazy(() =>
-  import("../pages/Doctors/DoctorDashboard/AppointmentDetail")
-);
-const DoctorPatients = lazy(() =>
-  import("../pages/Doctors/DoctorDashboard/DoctorPatient")
-);
-const DoctorPatientDetail = lazy(() =>
-  import("../pages/Doctors/DoctorDashboard/DoctorPatientDetail")
-);
-const AdminAppointments = lazy(() =>
-  import("../pages/Admin/AdminDashboard/AdminAppointment")
-);
-const AdminDoctors = lazy(() =>
-  import("../pages/Admin/AdminDashboard/AdminDoctors")
-);
-const AdminDoctorDetail = lazy(() =>
-  import("../pages/Admin/AdminDashboard/AdminDoctorDetail")
-);
-const AdminPatients = lazy(() =>
-  import("../pages/Admin/AdminDashboard/AdminPatients")
-);
-const AdminPatientDetail = lazy(() =>
-  import("../pages/Admin/AdminDashboard/AdminPatientDetail")
-);
-const PatientPayments = lazy(() => import("../pages/Patient/PatientPayments"));
-const AdminPayments = lazy(() => import("../pages/Admin/AdminDashboard/AdminPayments"));
-const PaymentResult = lazy(() => import("../pages/Patient/PaymentResult"));
-const DoctorChat = lazy(() =>
-  import("../pages/Doctors/DoctorDashboard/DoctorChat")
-);
-const AdminChat = lazy(() =>
-  import("../pages/Admin/AdminDashboard/AdminChat")
-);
-const AdminAppointmentDetail= lazy (() =>
-  import("../pages/Admin/AdminDashboard/AdminAppointmentDetail")
-);
-const AdminDepartments= lazy (() =>
-  import("../pages/Admin/AdminDashboard/AdminDepartments")
-);
+// ==================== LAZY LOAD: Admin Module ====================
+const AdminDashboard = lazyLoadFromModule(() => import("../pages/Admin"), "AdminDashboard");
+const AdminAppointments = lazyLoadFromModule(() => import("../pages/Admin"), "AdminAppointments");
+const AdminAppointmentDetail = lazyLoadFromModule(() => import("../pages/Admin"), "AdminAppointmentDetail");
+const AdminDoctors = lazyLoadFromModule(() => import("../pages/Admin"), "AdminDoctors");
+const AdminDoctorDetail = lazyLoadFromModule(() => import("../pages/Admin"), "AdminDoctorDetail");
+const AdminPatients = lazyLoadFromModule(() => import("../pages/Admin"), "AdminPatients");
+const AdminPatientDetail = lazyLoadFromModule(() => import("../pages/Admin"), "AdminPatientDetail");
+const AdminPayments = lazyLoadFromModule(() => import("../pages/Admin"), "AdminPayments");
+const AdminDepartments = lazyLoadFromModule(() => import("../pages/Admin"), "AdminDepartments");
+const AdminChat = lazyLoadFromModule(() => import("../pages/Admin"), "AdminChat");
+
+// ==================== LAZY LOAD: Doctor Module ====================
+const DoctorLayout = lazyLoadFromModule(() => import("../pages/Doctors"), "DoctorLayout");
+const DoctorDashboard = lazyLoadFromModule(() => import("../pages/Doctors"), "DoctorDashboard");
+const DoctorProfile = lazyLoadFromModule(() => import("../pages/Doctors"), "DoctorProfile");
+const DoctorAppointments = lazyLoadFromModule(() => import("../pages/Doctors"), "DoctorAppointments");
+const AppointmentDetail = lazyLoadFromModule(() => import("../pages/Doctors"), "AppointmentDetail");
+const DoctorPatients = lazyLoadFromModule(() => import("../pages/Doctors"), "DoctorPatients");
+const DoctorPatientDetail = lazyLoadFromModule(() => import("../pages/Doctors"), "DoctorPatientDetail");
+const DoctorChat = lazyLoadFromModule(() => import("../pages/Doctors"), "DoctorChat");
+
+// ==================== LAZY LOAD: Patient Module ====================
+const PatientProfile = lazyLoadFromModule(() => import("../pages/Patient"), "PatientProfile");
+const AppointmentHistory = lazyLoadFromModule(() => import("../pages/Patient"), "AppointmentHistory");
+const PatientPayments = lazyLoadFromModule(() => import("../pages/Patient"), "PatientPayments");
+const PaymentResult = lazyLoadFromModule(() => import("../pages/Patient"), "PaymentResult");
 
 export const ROUTES_CONFIG = [
-  // --- AUTH ---
+  // ==================== AUTH (EAGER) ====================
   {
     path: PATHS.LOGIN,
     element: Login,
@@ -92,7 +63,7 @@ export const ROUTES_CONFIG = [
     layout: "none",
   },
 
-  // --- PUBLIC PAGES ---
+  // ==================== PUBLIC PAGES ====================
   {
     path: PATHS.HOME,
     element: Home,
@@ -129,16 +100,18 @@ export const ROUTES_CONFIG = [
     layout: "public",
   },
   {
+    path: PATHS.APPOINTMENT,
+    element: Appointment,
+    layout: "public",
+  },
+
+  // ==================== PATIENT MODULE (LAZY) ====================
+  {
     path: PATHS.PATIENT_PROFILE,
     element: PatientProfile,
     layout: "public",
     isPrivate: true,
     roles: ["patient"],
-  },
-  {
-    path: PATHS.APPOINTMENT,
-    element: Appointment,
-    layout: "public",
   },
   {
     path: PATHS.PATIENT_APPOINTMENT_HISTORY,
@@ -161,14 +134,8 @@ export const ROUTES_CONFIG = [
     isPrivate: true,
     roles: ["patient"],
   },
-  {
-    path: PATHS.CHAT,
-    element: Chat,
-    layout: "public", 
-    isPrivate: true,
-    roles: ["patient", "doctor", "admin"],
-  },
-  // --- ADMIN ROUTES (FLAT STRUCTURE - NO NESTING) ---
+
+  // ==================== ADMIN MODULE (LAZY - FLAT STRUCTURE) ====================
   {
     path: PATHS.ADMIN,
     element: AdminDashboard,
@@ -240,8 +207,7 @@ export const ROUTES_CONFIG = [
     roles: ["admin"],
   },
 
-
-  // --- DOCTOR DASHBOARD (NESTED ROUTES - KEPT AS IS) ---
+  // ==================== DOCTOR MODULE (LAZY - NESTED ROUTES) ====================
   {
     path: PATHS.DOCTOR_DASHBOARD,
     element: DoctorLayout,
@@ -280,7 +246,16 @@ export const ROUTES_CONFIG = [
     ],
   },
 
-  // --- 404 ---
+  // ==================== SHARED: CHAT ====================
+  {
+    path: PATHS.CHAT,
+    element: Chat,
+    layout: "public", 
+    isPrivate: true,
+    roles: ["patient", "doctor", "admin"],
+  },
+
+  // ==================== 404 ====================
   {
     path: PATHS.NOT_FOUND,
     element: () => (

@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Link, NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -7,24 +6,56 @@ import {
   Stethoscope, 
   ClipboardList, 
   MessageSquare, 
-  Star, 
-  Settings,
   Building2,
   LogOut 
 } from 'lucide-react';
-
+import { prefetchModule } from '../../../routes/lazyLoadModule';
 
 const SideNav = ({ handleLogout }) => {
-
   const menuItems = [
-    { name: 'Tổng quan', path: '/admin', icon: LayoutDashboard },
-    { name: 'Đơn khám', path: '/admin/appointments', icon: ClipboardList },
-    {name: 'Khoa', path: '/admin/departments', icon: Building2 },
-    { name: 'Bác sĩ', path: '/admin/doctors', icon: Stethoscope }, 
-    { name: 'Bệnh nhân', path: '/admin/patients', icon: Users },  
-    { name: 'Quản lý thanh toán', path: '/admin/payments', icon: ClipboardList },  
-    { name: 'Chat', path: '/admin/chat', icon: MessageSquare },
-    //{ name: 'Đánh giá', path: '/admin/reviews', icon: Star },
+    { 
+      name: 'Tổng quan', 
+      path: '/admin', 
+      icon: LayoutDashboard,
+      // Prefetch function - load trước khi click
+      onPrefetch: () => prefetchModule(() => import('../../Admin'))
+    },
+    { 
+      name: 'Đơn khám', 
+      path: '/admin/appointments', 
+      icon: ClipboardList,
+      onPrefetch: () => prefetchModule(() => import('../../Admin'))
+    },
+    {
+      name: 'Khoa', 
+      path: '/admin/departments', 
+      icon: Building2,
+      onPrefetch: () => prefetchModule(() => import('../../Admin'))
+    },
+    { 
+      name: 'Bác sĩ', 
+      path: '/admin/doctors', 
+      icon: Stethoscope,
+      onPrefetch: () => prefetchModule(() => import('../../Admin'))
+    }, 
+    { 
+      name: 'Bệnh nhân', 
+      path: '/admin/patients', 
+      icon: Users,
+      onPrefetch: () => prefetchModule(() => import('../../Admin'))
+    },  
+    { 
+      name: 'Quản lý thanh toán', 
+      path: '/admin/payments', 
+      icon: ClipboardList,
+      onPrefetch: () => prefetchModule(() => import('../../Admin'))
+    },  
+    { 
+      name: 'Chat', 
+      path: '/admin/chat', 
+      icon: MessageSquare,
+      onPrefetch: () => prefetchModule(() => import('../../Admin'))
+    },
   ];
 
   return (
@@ -40,23 +71,23 @@ const SideNav = ({ handleLogout }) => {
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-4">
           {menuItems.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  // `end` prop quan trọng cho link "Tổng quan"
-                  end={item.path === '/admin'}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors text-base ${
-                      isActive 
-                        ? 'bg-primary text-white shadow-md' 
-                        : 'text-gray-600 hover:bg-slate-100 hover:text-primary'
-                    }`
-                  }
-                >
-                  <item.icon size={22} strokeWidth={2.5}/>
-                  <span>{item.name}</span>
-                </NavLink>
-              </li>
+            <li key={item.path}>
+              <NavLink
+                to={item.path}
+                end={item.path === '/admin'}
+                onMouseEnter={item.onPrefetch} // ⭐ PREFETCH KHI HOVER
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-colors text-base ${
+                    isActive 
+                      ? 'bg-primary text-white shadow-md' 
+                      : 'text-gray-600 hover:bg-slate-100 hover:text-primary'
+                  }`
+                }
+              >
+                <item.icon size={22} strokeWidth={2.5}/>
+                <span>{item.name}</span>
+              </NavLink>
+            </li>
           ))}
         </ul>
       </nav>
@@ -65,16 +96,6 @@ const SideNav = ({ handleLogout }) => {
       <div className="p-4 border-t border-gray-200">
         <ul className="space-y-1">
           <li>
-            <NavLink to="/admin/settings" 
-              className={({ isActive }) => `flex items-center gap-3 px-3 py-3 rounded-lg font-medium transition-colors ${
-                  isActive ? 'bg-slate-200 text-primary' : 'text-gray-600 hover:bg-slate-100'
-              }`}
-            >
-            
-            </NavLink>
-          </li>
-          <li>
-
             <button 
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
