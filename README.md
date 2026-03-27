@@ -137,4 +137,5 @@ npm run dev
 
 Frontend chạy tại:  
 👉 http://localhost:5173
-
+Backend sẽ chạy tại:
+👉 http://127.0.0.1:8000
